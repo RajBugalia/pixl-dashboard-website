@@ -157,7 +157,7 @@ export default function Playlists() {
           </div>
 
           <button 
-            className="btn-primary" 
+            className={`btn-primary ${saving ? 'loading' : ''}`}
             onClick={handleCreatePlaylist} 
             disabled={!playlistName || selectedMediaIds.length === 0 || saving}
           >

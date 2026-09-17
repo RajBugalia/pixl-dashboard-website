@@ -198,7 +198,7 @@ export default function Campaigns() {
             )}
           </div>
 
-          <button type="submit" className="btn-primary" disabled={saving || !campaignName || !startDate || !endDate || !selectedPlaylistId || selectedScreenIds.length === 0}>
+          <button type="submit" className={`btn-primary ${saving ? 'loading' : ''}`} disabled={saving || !campaignName || !startDate || !endDate || !selectedPlaylistId || selectedScreenIds.length === 0}>
             {saving ? 'Launching...' : 'Launch Campaign'}
           </button>
         </form>

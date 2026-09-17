@@ -112,7 +112,7 @@ export default function MediaLibrary() {
               </div>
             )}
 
-            <button type="submit" className="btn-primary" disabled={uploading}>
+            <button type="submit" className={`btn-primary ${uploading ? 'loading' : ''}`} disabled={uploading}>
               {uploading ? 'Uploading to Cloud...' : 'Upload Media'}
             </button>
           </form>
