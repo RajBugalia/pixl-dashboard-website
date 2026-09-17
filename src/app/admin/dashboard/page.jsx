@@ -66,7 +66,7 @@ export default function AdminDashboard() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {screens.filter(s => s.status === 'ONLINE' || s.status === 'ACTIVE').map(screen => (
-                <div key={screen.id} style={{ background: 'rgba(0, 0, 0,0.05)', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={screen.id} style={{ background: '#f9fafb', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{screen.name}</h3>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{screen.location}</p>

@@ -61,7 +61,7 @@ export default function ManageAdmins() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {admins.map(admin => (
               <div key={admin.id} style={{ 
-                background: 'rgba(0,0,0,0.2)', 
+                background: '#e5e7eb', 
                 padding: '1rem', 
                 borderRadius: '8px',
                 display: 'flex',

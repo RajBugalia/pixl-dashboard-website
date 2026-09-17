@@ -30,7 +30,7 @@ export default function ScreenCard({ screen }) {
         </div>
       </div>
 
-      <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '1rem', marginTop: '0.5rem' }}>
+      <div style={{ background: '#e5e7eb', borderRadius: '8px', padding: '1rem', marginTop: '0.5rem' }}>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Current Campaign</p>
         <p style={{ fontWeight: 500 }}>{screen.campaign ? screen.campaign.name : 'None (Default Default)'}</p>
       </div>

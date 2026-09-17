@@ -137,7 +137,7 @@ export default function Campaigns() {
 
       {showBuilder ? (
         <form className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }} onSubmit={handleSubmit}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '1px solid rgba(0, 0, 0,0.1)', paddingBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '1rem' }}>
             <h2 style={{ fontSize: '1.25rem' }}>Campaign Builder</h2>
             <button type="button" onClick={() => setShowBuilder(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Cancel</button>
           </div>
@@ -161,7 +161,7 @@ export default function Campaigns() {
           <div className="input-group" style={{ marginBottom: '1.5rem' }}>
             <label className="input-label">Select Playlist</label>
             {playlists.length === 0 ? (
-              <div style={{ padding: '1rem', background: 'rgba(0, 0, 0,0.05)', borderRadius: '8px', color: '#ef4444' }}>
+              <div style={{ padding: '1rem', background: '#f9fafb', borderRadius: '8px', color: '#ef4444' }}>
                 You have no playlists! Please create a playlist first.
               </div>
             ) : (
@@ -181,7 +181,7 @@ export default function Campaigns() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {screens.map(screen => (
-                  <label key={screen.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: 'rgba(0, 0, 0,0.05)', borderRadius: '8px', cursor: 'pointer', border: selectedScreenIds.includes(screen.id) ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                  <label key={screen.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', cursor: 'pointer', border: selectedScreenIds.includes(screen.id) ? '1px solid var(--accent)' : '1px solid transparent' }}>
                     <input 
                       type="checkbox" 
                       checked={selectedScreenIds.includes(screen.id)}

@@ -62,12 +62,12 @@ export default function MasterDashboard() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {admins.slice(0, 5).map(admin => (
-                <div key={admin.id} style={{ background: 'rgba(0, 0, 0,0.05)', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={admin.id} style={{ background: '#f9fafb', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{admin.name}</h3>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{admin.email}</p>
                   </div>
-                  <div style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: 'rgba(0, 0, 0,0.1)', fontSize: '0.8rem' }}>
+                  <div style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: '#f3f4f6', fontSize: '0.8rem' }}>
                     {admin.role}
                   </div>
                 </div>

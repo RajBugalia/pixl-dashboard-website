@@ -115,7 +115,7 @@ export default function Playlists() {
 
       {showBuilder ? (
         <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '1px solid rgba(0, 0, 0,0.1)', paddingBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '1rem' }}>
             <h2 style={{ fontSize: '1.25rem' }}>Playlist Builder</h2>
             <button onClick={() => setShowBuilder(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Cancel</button>
           </div>
@@ -173,7 +173,7 @@ export default function Playlists() {
           ) : (
             playlists.map(playlist => (
               <div key={playlist.id} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(0, 0, 0,0.1)', paddingBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f3f4f6', paddingBottom: '0.5rem' }}>
                   <h3 style={{ fontSize: '1.25rem', margin: 0 }}>
                     {playlist.name}
                   </h3>

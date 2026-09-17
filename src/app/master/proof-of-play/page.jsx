@@ -31,7 +31,7 @@ export default function MasterProofOfPlay() {
         <div className="glass-panel" style={{ overflowX: 'auto' }}>
           <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(0, 0, 0,0.1)' }}>
+              <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                 <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Screen Name</th>
                 <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Admin Owner</th>
                 <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Media Type</th>
@@ -41,12 +41,12 @@ export default function MasterProofOfPlay() {
             </thead>
             <tbody>
               {logs.map(log => (
-                <tr key={log.id} style={{ borderBottom: '1px solid rgba(0, 0, 0,0.05)' }}>
+                <tr key={log.id} style={{ borderBottom: '1px solid #f9fafb' }}>
                   <td style={{ padding: '1rem', fontWeight: 500 }}>{log.screenName}</td>
                   <td style={{ padding: '1rem', color: 'var(--accent)' }}>{log.adminEmail}</td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{
-                      background: 'rgba(0, 0, 0,0.1)',
+                      background: '#f3f4f6',
                       padding: '0.25rem 0.75rem',
                       borderRadius: '20px',
                       fontSize: '0.85rem'

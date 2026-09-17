@@ -111,7 +111,7 @@ export default function NetworkScreens() {
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                 🔑 Code: <strong style={{ color: 'var(--text-primary)' }}>{screen.pairingCode}</strong>
               </div>
-              <div style={{ fontSize: '0.85rem', background: 'rgba(0, 0, 0,0.05)', padding: '0.5rem', borderRadius: '4px', marginTop: '0.5rem' }}>
+              <div style={{ fontSize: '0.85rem', background: '#f9fafb', padding: '0.5rem', borderRadius: '4px', marginTop: '0.5rem' }}>
                 Admin: <strong style={{ color: 'var(--accent)' }}>{screen.assignedAdmin}</strong>
               </div>
             </div>
