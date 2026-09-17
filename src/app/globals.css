@@ -5,9 +5,9 @@
   --bg-gradient: #ffffff;
   --text-primary: #000000; /* Black */
   --text-secondary: #000000; /* Black */
-  --accent-color: #000000; /* Black accent */
-  --accent-hover: #333333;
-  --accent-gradient: #000000;
+  --accent-color: #3b82f6; /* Blue */
+  --accent-hover: #2563eb; /* Darker Blue */
+  --accent-gradient: #3b82f6;
   
   --glass-bg: #f3f4f6; /* Light Gray for Cards */
   --glass-border: #e5e7eb; /* Very light gray border */
@@ -61,7 +61,7 @@ a {
 }
 
 .input-field {
-  background: rgba(0, 0, 0, 0.9);
+  background: #ffffff;
   border: 1px solid var(--glass-border);
   border-radius: var(--input-radius);
   padding: 0.75rem 1rem;
