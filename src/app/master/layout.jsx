@@ -4,6 +4,7 @@ const masterLinks = [
   { href: '/master/dashboard', label: 'Dashboard' },
   { href: '/master/admins', label: 'Manage Admins' },
   { href: '/master/screens', label: 'Manage Screens' },
+  { href: '/master/pair', label: 'Pair Screen' },
   { href: '/master/proof-of-play', label: 'Proof of Play Analytics' },
 ];
 
