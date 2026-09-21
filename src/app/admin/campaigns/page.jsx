@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { MoreVertical, Trash2 } from 'lucide-react';
-import ConfirmModal from '@/components/ConfirmModal';
+import { MoreVertical, Trash2, Edit2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import client from '@/api/client';
 
 export default function Campaigns() {
@@ -11,24 +11,8 @@ export default function Campaigns() {
   const [loading, setLoading] = useState(true);
 
   const [showBuilder, setShowBuilder] = useState(false);
-  const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
-
-  const handleDeleteCampaign = async () => {
-    const id = deleteConfirm.id;
-    if (!id) return;
-    try {
-      await client.delete(`/campaigns/${id}`);
-      setCampaigns(campaigns.filter(c => c.id !== id));
-      setMessage({ type: 'success', text: 'Campaign deleted successfully!' });
-      setDeleteConfirm({ isOpen: false, id: null });
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete campaign');
-    }
-  };
 
   useEffect(() => {
     const handleClickOutside = () => setActiveMenuId(null);
@@ -79,17 +63,22 @@ export default function Campaigns() {
     if (!campaignName || !startDate || !endDate || !selectedPlaylistId || selectedScreenIds.length === 0) return;
     
     setSaving(true);
-    setMessage(null);
     try {
       await client.post('/campaigns', {
         name: campaignName,
-        startDate: startDate, // e.g. "2026-09-16T14:30"
+        startDate: startDate,
         endDate: endDate,
         playlistId: selectedPlaylistId,
         targetScreenIds: selectedScreenIds
       });
 
-      setMessage({ type: 'success', text: 'Campaign created and pushed to screens successfully!' });
+      Swal.fire({
+        icon: 'success',
+        title: 'Campaign Created!',
+        text: 'Successfully pushed to screens.',
+        timer: 1500,
+        showConfirmButton: false
+      });
       setShowBuilder(false);
       
       // Reset Form
@@ -101,14 +90,107 @@ export default function Campaigns() {
       
       fetchData(); // Refresh list
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to create campaign' });
+      Swal.fire({
+        icon: 'error',
+        title: 'Creation Failed',
+        text: err.response?.data?.error || 'Failed to create campaign'
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  const handleEditClick = (campaign) => {
+    setActiveMenuId(null);
+    Swal.fire({
+      title: 'Edit Campaign Name',
+      input: 'text',
+      inputValue: campaign.name,
+      showCancelButton: true,
+      confirmButtonText: 'Save',
+      confirmButtonColor: '#2563EB',
+      cancelButtonColor: '#9ca3af',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to write something!';
+        }
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Saving...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+          
+          await client.put(`/campaigns/${campaign.id}`, { name: result.value });
+          setCampaigns(campaigns.map(c => c.id === campaign.id ? { ...c, name: result.value } : c));
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Saved!',
+            text: 'Campaign name updated successfully.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: err.response?.data?.error || 'Failed to update campaign name'
+          });
+        }
+      }
+    });
+  };
+
+  const handleDeleteClick = (campaign) => {
+    setActiveMenuId(null);
+    Swal.fire({
+      title: 'Delete Campaign?',
+      text: `Are you sure you want to delete "${campaign.name}"? It will stop immediately on all screens.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Yes, delete it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Deleting...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+          
+          await client.delete(`/campaigns/${campaign.id}`);
+          setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Campaign deleted successfully.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Delete Failed',
+            text: 'Failed to delete campaign'
+          });
+        }
+      }
+    });
+  };
+
   if (loading) {
-    return <p>Loading Campaigns...</p>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading Campaigns...</p>
+      </div>
+    );
   }
 
   return (
@@ -121,19 +203,6 @@ export default function Campaigns() {
           </button>
         )}
       </div>
-
-      {message && (
-        <div style={{ 
-          padding: '0.75rem', 
-          borderRadius: '8px', 
-          marginBottom: '1.5rem',
-          background: message.type === 'success' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-          border: `1px solid ${message.type === 'success' ? '#22c55e' : '#ef4444'}`,
-          color: message.type === 'success' ? '#16a34a' : '#ef4444'
-        }}>
-          {message.text}
-        </div>
-      )}
 
       {showBuilder ? (
         <form className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }} onSubmit={handleSubmit}>
@@ -165,7 +234,7 @@ export default function Campaigns() {
                 You have no playlists! Please create a playlist first.
               </div>
             ) : (
-              <select className="input-field" value={selectedPlaylistId} onChange={e => setSelectedPlaylistId(e.target.value)} required style={{ background: 'var(--surface)', color: 'var(--text-primary)' }}>
+              <select className="input-field" value={selectedPlaylistId} onChange={e => setSelectedPlaylistId(e.target.value)} required style={{ background: '#ffffff', color: 'var(--text-primary)' }}>
                 <option value="" disabled>-- Select a Playlist --</option>
                 {playlists.map(p => (
                   <option key={p.id} value={p.id}>{p.name} ({p.mediaCount} assets)</option>
@@ -181,7 +250,7 @@ export default function Campaigns() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {screens.map(screen => (
-                  <label key={screen.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', cursor: 'pointer', border: selectedScreenIds.includes(screen.id) ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                  <label key={screen.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#f9fafb', borderRadius: '8px', cursor: 'pointer', border: selectedScreenIds.includes(screen.id) ? '1px solid var(--accent-color)' : '1px solid transparent' }}>
                     <input 
                       type="checkbox" 
                       checked={selectedScreenIds.includes(screen.id)}
@@ -224,7 +293,7 @@ export default function Campaigns() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--accent)' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--accent-color)' }}>
                         {camp.targetScreens?.length || 0}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Screens</div>
@@ -239,16 +308,32 @@ export default function Campaigns() {
                       {activeMenuId === camp.id && (
                         <div style={{
                           position: 'absolute', right: 0, top: '100%',
-                          background: 'var(--panel-bg)',
-                          border: '1px solid var(--border-color)',
+                          background: '#ffffff',
+                          border: '1px solid var(--glass-border)',
                           borderRadius: '8px',
                           padding: '0.5rem',
                           zIndex: 10,
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                           minWidth: '120px'
                         }}>
                           <button 
-                            onClick={() => { setActiveMenuId(null); setDeleteConfirm({ isOpen: true, id: camp.id }); }}
+                            onClick={() => handleEditClick(camp)}
+                            style={{
+                              width: '100%',
+                              display: 'flex', alignItems: 'center', gap: '0.5rem',
+                              background: 'none', border: 'none',
+                              color: 'var(--text-primary)', cursor: 'pointer',
+                              padding: '0.5rem', borderRadius: '4px',
+                              textAlign: 'left', fontSize: '0.9rem',
+                              marginBottom: '0.25rem'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(37, 99, 235, 0.08)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                          >
+                            <Edit2 size={16} /> Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteClick(camp)}
                             style={{
                               width: '100%',
                               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -272,14 +357,6 @@ export default function Campaigns() {
           )}
         </div>
       )}
-
-      <ConfirmModal 
-        isOpen={deleteConfirm.isOpen}
-        title="Delete Campaign?"
-        message="Are you sure you want to delete this campaign? It will stop immediately on all screens."
-        onConfirm={handleDeleteCampaign}
-        onCancel={() => setDeleteConfirm({ isOpen: false, id: null })}
-      />
     </>
   );
 }

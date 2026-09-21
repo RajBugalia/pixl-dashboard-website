@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import client from '@/api/client';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
@@ -27,6 +28,12 @@ export default function AdminDashboard() {
   const activeScreens = screens.filter(s => s.status === 'ONLINE' || s.status === 'ACTIVE').length;
   const inactiveScreens = totalScreens - activeScreens;
 
+  const pieData = [
+    { name: 'Active Screens', value: activeScreens },
+    { name: 'Inactive Screens', value: inactiveScreens }
+  ];
+  const COLORS = ['#10B981', '#EF4444'];
+
   return (
     <>
       <div className="page-header">
@@ -38,12 +45,12 @@ export default function AdminDashboard() {
           <span className="stat-value">{totalScreens}</span>
           <span className="stat-label">Total Screens</span>
         </div>
-        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #22c55e' }}>
-          <span className="stat-value">{activeScreens}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #10B981' }}>
+          <span className="stat-value" style={{ color: '#10B981', background: 'none', WebkitTextFillColor: 'initial' }}>{activeScreens}</span>
           <span className="stat-label">Active Screens</span>
         </div>
-        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #ef4444' }}>
-          <span className="stat-value">{inactiveScreens}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #EF4444' }}>
+          <span className="stat-value" style={{ color: '#EF4444', background: 'none', WebkitTextFillColor: 'initial' }}>{inactiveScreens}</span>
           <span className="stat-label">Inactive Screens</span>
         </div>
         <div className="glass-panel stat-card">
@@ -55,42 +62,51 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
         <div className="glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.25rem' }}>Active Screens</h2>
-            <Link href="/admin/screens" style={{ color: 'var(--accent)', fontSize: '0.9rem', textDecoration: 'none' }}>
-              View All &rarr;
-            </Link>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Screen Status Distribution</h2>
           </div>
           
-          {activeScreens === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>No active screens currently running.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {screens.filter(s => s.status === 'ONLINE' || s.status === 'ACTIVE').map(screen => (
-                <div key={screen.id} style={{ background: '#f9fafb', padding: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{screen.name}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{screen.location}</p>
-                  </div>
-                  <div style={{ padding: '0.25rem 0.75rem', borderRadius: '20px', background: 'rgba(34, 197, 94, 0.2)', color: '#16a34a', fontSize: '0.8rem' }}>
-                    Online
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div style={{ height: '300px', width: '100%' }}>
+            {totalScreens > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                No screens available to display.
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="glass-panel">
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Quick Actions</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Quick Actions</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Link href="/admin/campaigns" className="btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
               Launch New Campaign
             </Link>
-            <Link href="/admin/playlists" className="btn-primary" style={{ background: 'var(--surface-light)', textAlign: 'center', textDecoration: 'none' }}>
+            <Link href="/admin/playlists" className="btn-secondary" style={{ textAlign: 'center', textDecoration: 'none' }}>
               Create Playlist
             </Link>
-            <Link href="/admin/media" className="btn-primary" style={{ background: 'var(--surface-light)', textAlign: 'center', textDecoration: 'none' }}>
+            <Link href="/admin/media" className="btn-secondary" style={{ textAlign: 'center', textDecoration: 'none' }}>
               Upload Media
+            </Link>
+            <Link href="/admin/screens" className="btn-secondary" style={{ textAlign: 'center', textDecoration: 'none' }}>
+              View All Screens
             </Link>
           </div>
         </div>

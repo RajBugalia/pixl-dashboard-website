@@ -1,4 +1,4 @@
-import Sidebar from '@/components/Sidebar';
+import Navbar from '@/components/Navbar';
 
 const masterLinks = [
   { href: '/master/dashboard', label: 'Dashboard' },
@@ -10,7 +10,7 @@ const masterLinks = [
 export default function MasterLayout({ children }) {
   return (
     <div className="dashboard-layout">
-      <Sidebar role="master" links={masterLinks} />
+      <Navbar role="master" links={masterLinks} />
       <main className="main-content">
         {children}
       </main>

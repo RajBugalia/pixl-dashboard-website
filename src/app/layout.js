@@ -1,8 +1,8 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Viewo Admin',
-  description: 'Viewo Digital Signage System',
+  title: 'PixL Admin',
+  description: 'PixL Digital Signage System',
 }
 
 export default function RootLayout({ children }) {

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Upload, Film, Image as ImageIcon, CheckCircle, Clock, Search, Filter, PlayCircle, MoreVertical, Trash2 } from 'lucide-react';
-import ConfirmModal from '@/components/ConfirmModal';
+import Swal from 'sweetalert2';
 import client from '@/api/client';
 
 export default function MediaLibrary() {
@@ -12,20 +12,6 @@ export default function MediaLibrary() {
 
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
-
-  const handleDeleteMedia = async () => {
-    const id = deleteConfirm.id;
-    if (!id) return;
-    try {
-      await client.delete(`/media/${id}`);
-      setMedia(media.filter(m => m.id !== id));
-      setDeleteConfirm({ isOpen: false, id: null });
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || 'Failed to delete media');
-    }
-  };
 
   useEffect(() => {
     const handleClickOutside = () => setActiveMenuId(null);
@@ -62,6 +48,46 @@ export default function MediaLibrary() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleDeleteClick = (item) => {
+    setActiveMenuId(null);
+    Swal.fire({
+      title: 'Delete Media?',
+      text: `Are you sure you want to delete "${item.filename}"? It will be removed from all playlists.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Yes, delete it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Deleting...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+          
+          await client.delete(`/media/${item.id}`);
+          setMedia(media.filter(m => m.id !== item.id));
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Media deleted successfully.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Delete Failed',
+            text: err.response?.data?.error || 'Failed to delete media'
+          });
+        }
+      }
+    });
   };
 
   return (
@@ -102,7 +128,7 @@ export default function MediaLibrary() {
             </div>
             
             {file && (
-              <div style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
                 <p style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Preview:</p>
                 {file.type.startsWith('image/') ? (
                   <img src={URL.createObjectURL(file)} alt="preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px' }} />
@@ -132,7 +158,7 @@ export default function MediaLibrary() {
                   key={item.id} 
                   onClick={() => setSelectedAsset(item)}
                   style={{ 
-                    background: 'rgba(0,0,0,0.3)', 
+                    background: 'rgba(0,0,0,0.05)', 
                     borderRadius: '8px', 
                     padding: '0.5rem', 
                     display: 'flex', 
@@ -162,16 +188,16 @@ export default function MediaLibrary() {
                       {activeMenuId === item.id && (
                         <div style={{
                           position: 'absolute', right: 0, bottom: '100%',
-                          background: 'var(--panel-bg)',
-                          border: '1px solid var(--border-color)',
+                          background: '#ffffff',
+                          border: '1px solid var(--glass-border)',
                           borderRadius: '8px',
                           padding: '0.5rem',
                           zIndex: 10,
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                           minWidth: '120px'
                         }}>
                           <button 
-                            onClick={(e) => { e.stopPropagation(); setActiveMenuId(null); setDeleteConfirm({ isOpen: true, id: item.id }); }}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}
                             style={{
                               width: '100%',
                               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -210,8 +236,8 @@ export default function MediaLibrary() {
         }} onClick={() => setSelectedAsset(null)}>
           <div 
             style={{
-              background: 'var(--panel-bg)',
-              border: '1px solid var(--border-color)',
+              background: '#ffffff',
+              border: '1px solid var(--glass-border)',
               padding: '2rem',
               borderRadius: '16px',
               maxWidth: '900px',
@@ -244,14 +270,6 @@ export default function MediaLibrary() {
           </div>
         </div>
       )}
-
-      <ConfirmModal 
-        isOpen={deleteConfirm.isOpen}
-        title="Delete Media?"
-        message="Are you sure you want to delete this media? It will be removed from all playlists."
-        onConfirm={handleDeleteMedia}
-        onCancel={() => setDeleteConfirm({ isOpen: false, id: null })}
-      />
     </>
   );
 }

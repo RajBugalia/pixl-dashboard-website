@@ -8,37 +8,60 @@ export default function Login() {
   const [role, setRole] = useState('admin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
+    setError('');
+    setIsLoading(true);
+    
     try {
-      const response = await client.post('/auth/signin', { email, passwordHash: password });
-      const { token, role: userRole } = response.data;
+      const response = await client.post('/auth/signin', {
+        email,
+        passwordHash: password
+      });
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(response.data));
-
-      if (userRole === 'ROLE_MASTER') {
+      const { token, id, email: userEmail, role: backendRole } = response.data;
+      
+      // Check permissions based on selected radio button
+      if (role === 'master') {
+        if (backendRole !== 'ROLE_MASTER') {
+          setError('Access denied: You do not have Master Panel privileges.');
+          setIsLoading(false);
+          return;
+        }
+        
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify({ id, email: userEmail, role: backendRole }));
         router.push('/master/dashboard');
       } else {
+        if (backendRole !== 'ROLE_ADMIN' && backendRole !== 'ROLE_MASTER') {
+          setError('Access denied: You do not have Admin Panel privileges.');
+          setIsLoading(false);
+          return;
+        }
+        
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify({ id, email: userEmail, role: backendRole }));
         router.push('/admin/dashboard');
       }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
       <div className="glass-panel" style={{ width: '100%', maxWidth: '420px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 600 }}>Welcome to Viewo</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 600 }}>Welcome to PixL</h2>
         
-        {errorMsg && (
+        {error && (
           <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', borderRadius: '8px', marginBottom: '1.5rem', color: '#ef4444' }}>
-            {errorMsg}
+            {error}
           </div>
         )}
 
@@ -90,8 +113,8 @@ export default function Login() {
             />
           </div>
 
-          <button type="submit" className="btn-primary">
-            Sign In as {role === 'master' ? 'Master' : 'Admin'}
+          <button type="submit" className={`btn-primary ${isLoading ? 'loading' : ''}`} disabled={isLoading}>
+            Sign In
           </button>
         </form>
 

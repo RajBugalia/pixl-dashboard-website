@@ -6,10 +6,12 @@ export default function PairScreen() {
   const [pairingCode, setPairingCode] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [message, setMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handlePair = async (e) => {
     e.preventDefault();
     setMessage(null);
+    setIsLoading(true);
     try {
       await client.post('/master/pair-screen', {
         pairingCode,
@@ -20,6 +22,8 @@ export default function PairScreen() {
       setAdminEmail('');
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Pairing failed' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,13 +69,13 @@ export default function PairScreen() {
             <input 
               type="email" 
               className="input-field" 
-              placeholder="admin@viewo.com" 
+              placeholder="admin@pixl.com" 
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
               required
             />
           </div>
-          <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '0.75rem 2rem' }}>
+          <button type="submit" className={`btn-primary ${isLoading ? 'loading' : ''}`} style={{ width: 'auto', padding: '0.75rem 2rem' }} disabled={isLoading}>
             Pair & Assign Screen
           </button>
         </form>

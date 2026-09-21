@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { MoreVertical, Trash2 } from 'lucide-react';
-import ConfirmModal from '@/components/ConfirmModal';
+import { MoreVertical, Trash2, Edit2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import client from '@/api/client';
 
 export default function Playlists() {
@@ -12,24 +12,8 @@ export default function Playlists() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [playlistName, setPlaylistName] = useState('');
   const [selectedMediaIds, setSelectedMediaIds] = useState([]);
-  const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
-
-  const handleDeletePlaylist = async () => {
-    const id = deleteConfirm.id;
-    if (!id) return;
-    try {
-      await client.delete(`/playlists/${id}`);
-      setPlaylists(playlists.filter(p => p.id !== id));
-      setMessage({ type: 'success', text: 'Playlist deleted successfully!' });
-      setDeleteConfirm({ isOpen: false, id: null });
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete playlist');
-    }
-  };
 
   useEffect(() => {
     const handleClickOutside = () => setActiveMenuId(null);
@@ -69,25 +53,124 @@ export default function Playlists() {
   const handleCreatePlaylist = async () => {
     if (!playlistName || selectedMediaIds.length === 0) return;
     setSaving(true);
-    setMessage(null);
     try {
       await client.post('/playlists', {
         name: playlistName,
         mediaIds: selectedMediaIds
       });
-      setMessage({ type: 'success', text: 'Playlist created successfully!' });
+      Swal.fire({
+        icon: 'success',
+        title: 'Playlist Created!',
+        timer: 1500,
+        showConfirmButton: false
+      });
       setShowBuilder(false);
       setPlaylistName('');
       setSelectedMediaIds([]);
       fetchData(); // refresh list
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to create playlist' });
+      Swal.fire({
+        icon: 'error',
+        title: 'Creation Failed',
+        text: 'Failed to create playlist'
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p>Loading Playlists...</p>;
+  const handleEditClick = (playlist) => {
+    setActiveMenuId(null);
+    Swal.fire({
+      title: 'Edit Playlist Name',
+      input: 'text',
+      inputValue: playlist.name,
+      showCancelButton: true,
+      confirmButtonText: 'Save',
+      confirmButtonColor: '#2563EB',
+      cancelButtonColor: '#9ca3af',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'You need to write something!';
+        }
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Saving...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+          
+          await client.put(`/playlists/${playlist.id}`, { name: result.value });
+          setPlaylists(playlists.map(p => p.id === playlist.id ? { ...p, name: result.value } : p));
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Saved!',
+            text: 'Playlist name updated successfully.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: err.response?.data?.error || 'Failed to update playlist name'
+          });
+        }
+      }
+    });
+  };
+
+  const handleDeleteClick = (playlist) => {
+    setActiveMenuId(null);
+    Swal.fire({
+      title: 'Delete Playlist?',
+      text: `Are you sure you want to delete "${playlist.name}"? This will ALSO delete any campaigns using it!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#9ca3af',
+      confirmButtonText: 'Yes, delete it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Deleting...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+          
+          await client.delete(`/playlists/${playlist.id}`);
+          setPlaylists(playlists.filter(p => p.id !== playlist.id));
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Playlist deleted successfully.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Delete Failed',
+            text: 'Failed to delete playlist'
+          });
+        }
+      }
+    });
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading Playlists...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -99,19 +182,6 @@ export default function Playlists() {
           </button>
         )}
       </div>
-
-      {message && (
-        <div style={{ 
-          padding: '0.75rem', 
-          borderRadius: '8px', 
-          marginBottom: '1.5rem',
-          background: message.type === 'success' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-          border: `1px solid ${message.type === 'success' ? '#22c55e' : '#ef4444'}`,
-          color: message.type === 'success' ? '#16a34a' : '#ef4444'
-        }}>
-          {message.text}
-        </div>
-      )}
 
       {showBuilder ? (
         <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -142,8 +212,8 @@ export default function Playlists() {
                   cursor: 'pointer',
                   borderRadius: '8px', 
                   padding: '4px',
-                  border: selectedMediaIds.includes(item.id) ? '2px solid var(--accent)' : '2px solid transparent',
-                  background: 'rgba(0,0,0,0.3)',
+                  border: selectedMediaIds.includes(item.id) ? '2px solid var(--accent-color)' : '2px solid transparent',
+                  background: 'rgba(0,0,0,0.05)',
                   transition: 'all 0.2s'
                 }}
               >
@@ -187,16 +257,32 @@ export default function Playlists() {
                     {activeMenuId === playlist.id && (
                       <div style={{
                         position: 'absolute', right: 0, top: '100%',
-                        background: 'var(--panel-bg)',
-                        border: '1px solid var(--border-color)',
+                        background: '#ffffff',
+                        border: '1px solid var(--glass-border)',
                         borderRadius: '8px',
                         padding: '0.5rem',
                         zIndex: 10,
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5)',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                         minWidth: '120px'
                       }}>
                         <button 
-                          onClick={() => { setActiveMenuId(null); setDeleteConfirm({ isOpen: true, id: playlist.id }); }}
+                          onClick={() => handleEditClick(playlist)}
+                          style={{
+                            width: '100%',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            background: 'none', border: 'none',
+                            color: 'var(--text-primary)', cursor: 'pointer',
+                            padding: '0.5rem', borderRadius: '4px',
+                            textAlign: 'left', fontSize: '0.9rem',
+                            marginBottom: '0.25rem'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(37, 99, 235, 0.08)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                        >
+                          <Edit2 size={16} /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClick(playlist)}
                           style={{
                             width: '100%',
                             display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -219,7 +305,7 @@ export default function Playlists() {
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
                   {playlist.media.map(m => (
-                    <div key={m.id} style={{ width: '60px', height: '60px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', background: 'rgba(0,0,0,0.5)' }}>
+                    <div key={m.id} style={{ width: '60px', height: '60px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', background: 'rgba(0,0,0,0.05)' }}>
                        {m.type === 'IMAGE' ? (
                         <img src={m.publicUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                        ) : (
@@ -233,14 +319,6 @@ export default function Playlists() {
           )}
         </div>
       )}
-
-      <ConfirmModal 
-        isOpen={deleteConfirm.isOpen}
-        title="Delete Playlist?"
-        message="Are you sure you want to delete this playlist? This will ALSO delete any campaigns using it!"
-        onConfirm={handleDeletePlaylist}
-        onCancel={() => setDeleteConfirm({ isOpen: false, id: null })}
-      />
     </>
   );
 }

@@ -1,4 +1,4 @@
-import Sidebar from '@/components/Sidebar';
+import Navbar from '@/components/Navbar';
 
 const adminLinks = [
   { href: '/admin/dashboard', label: 'Dashboard' },
@@ -12,7 +12,7 @@ const adminLinks = [
 export default function AdminLayout({ children }) {
   return (
     <div className="dashboard-layout">
-      <Sidebar role="admin" links={adminLinks} />
+      <Navbar role="admin" links={adminLinks} />
       <main className="main-content">
         {children}
       </main>
