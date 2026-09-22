@@ -41,8 +41,8 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid-cards" style={{ marginBottom: '2.5rem' }}>
-        <div className="glass-panel stat-card">
-          <span className="stat-value">{totalScreens}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #3B82F6' }}>
+          <span className="stat-value" style={{ color: '#3B82F6', background: 'none', WebkitTextFillColor: 'initial' }}>{totalScreens}</span>
           <span className="stat-label">Total Screens</span>
         </div>
         <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #10B981' }}>
@@ -53,8 +53,8 @@ export default function AdminDashboard() {
           <span className="stat-value" style={{ color: '#EF4444', background: 'none', WebkitTextFillColor: 'initial' }}>{inactiveScreens}</span>
           <span className="stat-label">Inactive Screens</span>
         </div>
-        <div className="glass-panel stat-card">
-          <span className="stat-value">{campaigns.length}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #8B5CF6' }}>
+          <span className="stat-value" style={{ color: '#8B5CF6', background: 'none', WebkitTextFillColor: 'initial' }}>{campaigns.length}</span>
           <span className="stat-label">Total Campaigns</span>
         </div>
       </div>

@@ -38,20 +38,20 @@ export default function MasterDashboard() {
       </div>
 
       <div className="grid-cards" style={{ marginBottom: '2.5rem' }}>
-        <div className="glass-panel stat-card">
-          <span className="stat-value">{stats.totalAdmins}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #3B82F6' }}>
+          <span className="stat-value" style={{ color: '#3B82F6', background: 'none', WebkitTextFillColor: 'initial' }}>{stats.totalAdmins}</span>
           <span className="stat-label">Total Admins</span>
         </div>
-        <div className="glass-panel stat-card">
-          <span className="stat-value">{stats.totalScreens}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #64748B' }}>
+          <span className="stat-value" style={{ color: '#64748B', background: 'none', WebkitTextFillColor: 'initial' }}>{stats.totalScreens}</span>
           <span className="stat-label">Total Screens</span>
         </div>
         <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #10B981' }}>
           <span className="stat-value" style={{ color: '#10B981', background: 'none', WebkitTextFillColor: 'initial' }}>{stats.activeScreens}</span>
           <span className="stat-label">Active Screens</span>
         </div>
-        <div className="glass-panel stat-card">
-          <span className="stat-value">{stats.totalCampaigns}</span>
+        <div className="glass-panel stat-card" style={{ borderLeft: '4px solid #F59E0B' }}>
+          <span className="stat-value" style={{ color: '#F59E0B', background: 'none', WebkitTextFillColor: 'initial' }}>{stats.totalCampaigns}</span>
           <span className="stat-label">Total Campaigns</span>
         </div>
       </div>
