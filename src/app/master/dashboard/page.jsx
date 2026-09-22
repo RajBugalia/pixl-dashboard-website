@@ -33,7 +33,7 @@ export default function MasterDashboard() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="page-header" style={{ marginTop: '1.5rem' }}>
         <h1 className="page-title">Master Dashboard</h1>
       </div>
 
@@ -56,7 +56,7 @@ export default function MasterDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem' }}>
         <div className="glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>System Overview</h2>
@@ -70,7 +70,7 @@ export default function MasterDashboard() {
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
+                <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#64748B' }} />
                 <Tooltip 
                   cursor={{ fill: 'rgba(0,0,0,0.02)' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
@@ -82,21 +82,6 @@ export default function MasterDashboard() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="glass-panel">
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Master Actions</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <Link href="/master/pair" className="btn-primary" style={{ textAlign: 'center', textDecoration: 'none' }}>
-              Pair New Screen
-            </Link>
-            <Link href="/master/screens" className="btn-secondary" style={{ textAlign: 'center', textDecoration: 'none' }}>
-              View Network Screens
-            </Link>
-            <Link href="/master/admins" className="btn-secondary" style={{ textAlign: 'center', textDecoration: 'none' }}>
-              Manage Admins
-            </Link>
           </div>
         </div>
       </div>
