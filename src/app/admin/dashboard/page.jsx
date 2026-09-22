@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import client from '@/api/client';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
@@ -85,6 +85,7 @@ export default function AdminDashboard() {
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                   />
+                  <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
