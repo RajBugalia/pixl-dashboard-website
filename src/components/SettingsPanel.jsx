@@ -2,28 +2,96 @@
 import { useState, useEffect } from 'react';
 import { Save, User, Lock, Bell, Settings } from 'lucide-react';
 import Swal from 'sweetalert2';
+import client from '@/api/client';
 
 export default function SettingsPanel() {
   const [activeTab, setActiveTab] = useState('profile');
-  const [user, setUser] = useState({ name: '', email: '' });
+  const [user, setUser] = useState({ 
+    name: '', email: '', theme: 'light', timezone: 'UTC', 
+    notifyAlerts: true, notifyReports: true, notifyUpdates: false 
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    fetchProfile();
   }, []);
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Settings Saved',
-      text: 'Your preferences have been updated successfully.',
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false
-    });
+  const fetchProfile = async () => {
+    try {
+      const res = await client.get('/user/me');
+      setUser(res.data);
+      // Update local storage so Navbar name updates
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      localStorage.setItem('user', JSON.stringify({ ...storedUser, name: res.data.name }));
+      
+      // Dispatch custom event to trigger navbar update immediately
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    try {
+      if (activeTab === 'security') {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+          Swal.fire('Error', 'Please fill all password fields', 'error');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          Swal.fire('Error', 'New passwords do not match', 'error');
+          return;
+        }
+        await client.put('/user/password', {
+          currentPassword,
+          newPassword
+        });
+        Swal.fire({ title: 'Password Updated', icon: 'success', timer: 2000, showConfirmButton: false });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        // Save Profile, Notifications, or System
+        await client.put('/user/profile', {
+          name: user.name,
+          theme: user.theme,
+          timezone: user.timezone,
+          notifyAlerts: user.notifyAlerts,
+          notifyReports: user.notifyReports,
+          notifyUpdates: user.notifyUpdates
+        });
+        
+        // Update local storage so Navbar name updates immediately
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...storedUser, name: user.name }));
+        
+        // Dispatch custom event to trigger navbar update
+        window.dispatchEvent(new Event('storage'));
+
+        Swal.fire({
+          title: 'Settings Saved',
+          text: 'Your preferences have been updated successfully.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', err.response?.data?.message || 'Failed to update settings', 'error');
+    }
+  };
+
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading Settings...</div>;
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -101,11 +169,11 @@ export default function SettingsPanel() {
                 </h2>
                 <div className="input-group">
                   <label className="input-label">Full Name</label>
-                  <input type="text" className="input-field" defaultValue={user.name} placeholder="Your Name" />
+                  <input type="text" className="input-field" value={user.name} onChange={(e) => setUser({...user, name: e.target.value})} placeholder="Your Name" required />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Email Address</label>
-                  <input type="email" className="input-field" defaultValue={user.email} disabled style={{ background: '#F1F5F9' }} />
+                  <input type="email" className="input-field" value={user.email} disabled style={{ background: '#F1F5F9' }} />
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Email address cannot be changed.</span>
                 </div>
               </div>
@@ -118,15 +186,15 @@ export default function SettingsPanel() {
                 </h2>
                 <div className="input-group">
                   <label className="input-label">Current Password</label>
-                  <input type="password" className="input-field" placeholder="••••••••" />
+                  <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="input-field" placeholder="••••••••" required />
                 </div>
                 <div className="input-group">
                   <label className="input-label">New Password</label>
-                  <input type="password" className="input-field" placeholder="••••••••" />
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input-field" placeholder="••••••••" required />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Confirm New Password</label>
-                  <input type="password" className="input-field" placeholder="••••••••" />
+                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input-field" placeholder="••••••••" required />
                 </div>
               </div>
             )}
@@ -138,21 +206,21 @@ export default function SettingsPanel() {
                 </h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-                    <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }} />
+                    <input type="checkbox" checked={user.notifyAlerts} onChange={(e) => setUser({...user, notifyAlerts: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }} />
                     <div>
                       <div style={{ fontWeight: 500 }}>System Alerts</div>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Get notified when screens go offline.</div>
                     </div>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-                    <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }} />
+                    <input type="checkbox" checked={user.notifyReports} onChange={(e) => setUser({...user, notifyReports: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }} />
                     <div>
                       <div style={{ fontWeight: 500 }}>Campaign Reports</div>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive weekly proof of play analytics.</div>
                     </div>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-                    <input type="checkbox" style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }} />
+                    <input type="checkbox" checked={user.notifyUpdates} onChange={(e) => setUser({...user, notifyUpdates: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--accent-color)' }} />
                     <div>
                       <div style={{ fontWeight: 500 }}>Marketing Updates</div>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive updates on new features.</div>
@@ -169,7 +237,7 @@ export default function SettingsPanel() {
                 </h2>
                 <div className="input-group">
                   <label className="input-label">Theme Mode</label>
-                  <select className="input-field">
+                  <select className="input-field" value={user.theme} onChange={(e) => setUser({...user, theme: e.target.value})}>
                     <option value="light">Light Mode</option>
                     <option value="dark">Dark Mode (Coming Soon)</option>
                     <option value="system">System Default</option>
@@ -177,7 +245,7 @@ export default function SettingsPanel() {
                 </div>
                 <div className="input-group">
                   <label className="input-label">Timezone</label>
-                  <select className="input-field" defaultValue="UTC">
+                  <select className="input-field" value={user.timezone} onChange={(e) => setUser({...user, timezone: e.target.value})}>
                     <option value="UTC">UTC (Universal Coordinated Time)</option>
                     <option value="EST">Eastern Standard Time</option>
                     <option value="PST">Pacific Standard Time</option>
