@@ -32,9 +32,12 @@ export default function AdminProofOfPlay() {
           <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Screen Name</th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Media Type</th>
+                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Screen</th>
+                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Campaign</th>
+                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Media</th>
                 <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Preview</th>
+                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Duration</th>
+                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Status</th>
                 <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>Played At</th>
               </tr>
             </thead>
@@ -42,13 +45,10 @@ export default function AdminProofOfPlay() {
               {logs.map(log => (
                 <tr key={log.id} style={{ borderBottom: '1px solid #f9fafb' }}>
                   <td style={{ padding: '1rem', fontWeight: 500 }}>{log.screenName}</td>
+                  <td style={{ padding: '1rem', fontWeight: 500, color: '#334155' }}>{log.campaignName}</td>
                   <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      background: '#f3f4f6',
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '20px',
-                      fontSize: '0.85rem'
-                    }}>{log.mediaType}</span>
+                    <div style={{ fontWeight: 500 }}>{log.mediaName}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{log.mediaType}</div>
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {log.mediaType.startsWith('image') ? (
@@ -57,7 +57,18 @@ export default function AdminProofOfPlay() {
                       <video src={log.mediaUrl} style={{width: 80, height: 45, objectFit: 'cover', borderRadius: '4px'}} muted />
                     )}
                   </td>
-                  <td style={{ padding: '1rem', color: 'var(--accent)' }}>{new Date(log.playedAt).toLocaleString()}</td>
+                  <td style={{ padding: '1rem' }}>{log.duration}s</td>
+                  <td style={{ padding: '1rem' }}>
+                    <span style={{
+                      background: log.status === 'COMPLETED' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      color: log.status === 'COMPLETED' ? '#16a34a' : '#ef4444',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '20px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600
+                    }}>{log.status}</span>
+                  </td>
+                  <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{new Date(log.playedAt).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
