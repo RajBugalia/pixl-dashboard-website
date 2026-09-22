@@ -118,17 +118,28 @@ export default function MediaLibrary() {
           <form onSubmit={handleUpload}>
             <div className="input-group" style={{ marginBottom: '1.5rem' }}>
               <label className="input-label">Select Video or Image</label>
-              <input 
-                type="file" 
+              <label 
                 className="input-field" 
-                accept="video/*,image/*"
-                onChange={(e) => setFile(e.target.files[0])}
-                required
-              />
+                style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', background: '#fff', padding: '0.5rem' }}
+              >
+                <span className="btn-secondary" style={{ padding: '0.4rem 1rem', marginRight: '1rem', width: 'auto', fontSize: '0.9rem' }}>
+                  Choose File
+                </span>
+                <span style={{ color: file ? 'var(--text-primary)' : 'var(--text-secondary)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {file ? file.name : 'No file chosen'}
+                </span>
+                <input 
+                  type="file" 
+                  accept="video/*,image/*"
+                  onChange={(e) => setFile(e.target.files[0])}
+                  required
+                  style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: 0 }}
+                />
+              </label>
             </div>
             
             {file && (
-              <div style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
+              <div style={{ marginBottom: '1.5rem', background: 'rgba(0,0,0,0.05)', padding: '1rem', borderRadius: '8px', textAlign: 'left' }}>
                 <p style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Preview:</p>
                 {file.type.startsWith('image/') ? (
                   <img src={URL.createObjectURL(file)} alt="preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px' }} />
