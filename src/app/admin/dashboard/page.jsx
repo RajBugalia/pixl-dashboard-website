@@ -65,12 +65,14 @@ export default function AdminDashboard() {
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Screen Status Distribution</h2>
           </div>
           
-          <div style={{ height: '300px', width: '100%' }}>
+          <div style={{ height: '300px', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             {totalScreens > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
+                    cx="50%"
+                    cy="50%"
                     innerRadius={80}
                     outerRadius={110}
                     paddingAngle={5}
