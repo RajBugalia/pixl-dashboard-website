@@ -105,7 +105,7 @@ a {
 .btn-primary {
   background: var(--accent-gradient);
   color: #ffffff;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--button-radius);
   padding: 0.85rem 1.5rem;
   font-size: 1rem;
