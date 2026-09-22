@@ -77,8 +77,20 @@ export default function AdminScreens() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">My Screens</h1>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h1 className="page-title" style={{ margin: 0 }}>My Screens</h1>
+        <button 
+          className="btn-primary" 
+          style={{ width: 'auto', padding: '0.5rem 1.5rem' }}
+          onClick={() => Swal.fire({
+            icon: 'info',
+            title: 'Add Screen',
+            text: 'To add a new screen, please ask your Master Administrator to pair a screen and assign it to your email address.',
+            confirmButtonColor: '#2563EB'
+          })}
+        >
+          Add Screen
+        </button>
       </div>
 
       {loading ? (
@@ -90,11 +102,11 @@ export default function AdminScreens() {
           No screens assigned to you yet. Ask the Master Panel to pair a screen to your email.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '2rem' }}>
           {screens.map(screen => (
             <div key={screen.id} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>{screen.name}</h3>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>{screen.name}</h2>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <span style={{
                     padding: '0.25rem 0.75rem',
