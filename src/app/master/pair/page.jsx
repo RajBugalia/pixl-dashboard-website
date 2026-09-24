@@ -4,6 +4,7 @@ import client from '@/api/client';
 
 export default function PairScreen() {
   const [pairingCode, setPairingCode] = useState('');
+  const [screenName, setScreenName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -15,10 +16,12 @@ export default function PairScreen() {
     try {
       await client.post('/master/pair-screen', {
         pairingCode,
+        screenName: screenName.trim(),
         adminEmail
       });
       setMessage({ type: 'success', text: 'Screen successfully paired to admin!' });
       setPairingCode('');
+      setScreenName('');
       setAdminEmail('');
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.message || 'Pairing failed' });
@@ -52,6 +55,17 @@ export default function PairScreen() {
         )}
 
         <form onSubmit={handlePair}>
+          <div className="input-group">
+            <label className="input-label">Screen Name</label>
+            <input 
+              type="text" 
+              className="input-field" 
+              placeholder="e.g. Main Reception Display" 
+              value={screenName}
+              onChange={(e) => setScreenName(e.target.value)}
+              required
+            />
+          </div>
           <div className="input-group">
             <label className="input-label">Pairing Code</label>
             <input 
