@@ -98,8 +98,22 @@ export default function Campaigns() {
     e.preventDefault();
     const isMulti = layoutMode === 'MULTIPLE';
 
-    if (!campaignName || !startDate || !endDate || selectedScreenIds.length === 0) return;
-    if (!isMulti && !selectedPlaylistId) return;
+    if (!campaignName.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Campaign Name Required', text: 'Please enter a name for the campaign.' });
+      return;
+    }
+    if (!startDate || !endDate) {
+      Swal.fire({ icon: 'warning', title: 'Schedule Dates Required', text: 'Please select both start and end dates.' });
+      return;
+    }
+    if (selectedScreenIds.length === 0) {
+      Swal.fire({ icon: 'warning', title: 'Select Target Screens', text: 'Please select at least one screen or screen group to broadcast this campaign.' });
+      return;
+    }
+    if (!isMulti && !selectedPlaylistId) {
+      Swal.fire({ icon: 'warning', title: 'Select Playlist', text: 'Please select a playlist for single screen playback.' });
+      return;
+    }
 
     // Build zones array if multiple screens
     const zonesArray = [];
