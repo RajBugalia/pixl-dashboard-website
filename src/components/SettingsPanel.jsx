@@ -33,6 +33,14 @@ export default function SettingsPanel() {
       window.dispatchEvent(new Event('storage'));
     } catch (err) {
       console.error('Error fetching profile:', err);
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (storedUser.name || storedUser.email) {
+        setUser(prev => ({
+          ...prev,
+          name: storedUser.name || prev.name,
+          email: storedUser.email || prev.email
+        }));
+      }
     } finally {
       setLoading(false);
     }
