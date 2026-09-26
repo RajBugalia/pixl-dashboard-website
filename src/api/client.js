@@ -32,13 +32,15 @@ client.interceptors.response.use(
         confirmButtonColor: '#ef4444'
       });
     } else if (error.response.status >= 500) {
-      // Handle generic server errors
-      Swal.fire({
-        icon: 'error',
-        title: 'Server Error',
-        text: 'An unexpected error occurred on the server.',
-        confirmButtonColor: '#ef4444'
-      });
+      // Don't show generic server error popup for background profile fetch
+      if (!error.config?.url?.includes('/user/me')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Server Error',
+          text: 'An unexpected error occurred on the server.',
+          confirmButtonColor: '#ef4444'
+        });
+      }
     }
     
     return Promise.reject(error);
