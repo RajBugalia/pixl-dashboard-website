@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Bell, User, LogOut, Settings } from 'lucide-react';
+import { API_BASE_URL } from '@/config/constants';
 
 export default function Navbar({ role, links }) {
   const [user, setUser] = useState(null);
@@ -16,7 +17,7 @@ export default function Navbar({ role, links }) {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch('http://localhost:8765/api/notifications', {
+      const res = await fetch(`${API_BASE_URL}/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
