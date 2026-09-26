@@ -115,21 +115,30 @@ export default function Campaigns() {
       return;
     }
 
-    // Build zones array if multiple screens
+    // BUG FIX: Validate all zones are assigned before building zonesArray
+    if (isMulti) {
+      for (let r = 0; r < splitRows; r++) {
+        for (let c = 0; c < splitCols; c++) {
+          const zIdx = r * splitCols + c;
+          if (!zonePlaylists[zIdx]) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Assign All Zones',
+              text: `Zone ${zIdx + 1} (Row ${r + 1}, Col ${c + 1}) has no playlist assigned. Please assign a playlist to every zone.`
+            });
+            return;
+          }
+        }
+      }
+    }
+
+    // Build zones array if multiple screens (all zones already validated above)
     const zonesArray = [];
     if (isMulti) {
       for (let r = 0; r < splitRows; r++) {
         for (let c = 0; c < splitCols; c++) {
           const zIdx = r * splitCols + c;
-          const pId = zonePlaylists[zIdx] || playlists[0]?.id;
-          if (!pId) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'Assign All Zones',
-              text: `Please select a playlist for Zone ${zIdx + 1} (Row ${r + 1}, Col ${c + 1}).`
-            });
-            return;
-          }
+          const pId = zonePlaylists[zIdx]; // BUG FIX: No silent fallback to playlists[0]
           zonesArray.push({
             zoneIndex: zIdx,
             row: r,
@@ -691,7 +700,16 @@ export default function Campaigns() {
           <button 
             type="submit" 
             className={`btn-primary ${saving ? 'loading' : ''}`} 
-            disabled={saving || !campaignName || !startDate || !endDate || selectedScreenIds.length === 0 || (layoutMode === 'SINGLE' && !selectedPlaylistId)}
+            disabled={(() => {
+              if (saving || !campaignName || !startDate || !endDate || selectedScreenIds.length === 0) return true;
+              if (layoutMode === 'SINGLE') return !selectedPlaylistId;
+              // BUG FIX: For MULTIPLE mode, ensure ALL zones have a playlist assigned
+              const totalZones = splitRows * splitCols;
+              for (let i = 0; i < totalZones; i++) {
+                if (!zonePlaylists[i]) return true;
+              }
+              return false;
+            })()}
           >
             {saving ? 'Launching...' : 'Launch Campaign'}
           </button>

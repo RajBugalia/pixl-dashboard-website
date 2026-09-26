@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Bell, Check, Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useRouter } from 'next/navigation';
+import client from '@/api/client';
 
 export default function NotificationsLog() {
   const [notifications, setNotifications] = useState([]);
@@ -11,18 +12,14 @@ export default function NotificationsLog() {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8765/api/notifications', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data);
-      } else if (res.status === 401) {
-        router.push('/login');
-      }
+      const res = await client.get('/notifications');
+      setNotifications(res.data);
     } catch (err) {
-      console.error(err);
+      if (err.response?.status === 401) {
+        router.push('/login');
+      } else {
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }
@@ -34,15 +31,9 @@ export default function NotificationsLog() {
 
   const markAllAsRead = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8765/api/notifications/read-all', {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchNotifications();
-        Swal.fire({ title: 'Success', text: 'All notifications marked as read', icon: 'success', timer: 1500, showConfirmButton: false });
-      }
+      await client.put('/notifications/read-all');
+      fetchNotifications();
+      Swal.fire({ title: 'Success', text: 'All notifications marked as read', icon: 'success', timer: 1500, showConfirmButton: false });
     } catch (err) {
       console.error(err);
     }
