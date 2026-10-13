@@ -1,0 +1,1457 @@
+[
+  {
+    "id": "TC001",
+    "title": "Create and launch a split-grid campaign with all zones assigned",
+    "description": "This verifies that an admin can build a split campaign, assign a playlist to every zone, and launch it successfully.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/campaigns"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a campaign"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the campaign name field with a unique campaign name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in valid campaign dates"
+      },
+      {
+        "type": "action",
+        "description": "Select split-grid campaign mode"
+      },
+      {
+        "type": "action",
+        "description": "Select a target screen"
+      },
+      {
+        "type": "action",
+        "description": "Assign a playlist to each split zone"
+      },
+      {
+        "type": "action",
+        "description": "Launch the campaign"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the split-screen campaign confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Log in as an admin and reach the admin dashboard",
+    "description": "This verifies that an admin can sign in and land on the correct protected dashboard.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the admin dashboard is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Log in as a master and reach the master dashboard",
+    "description": "This verifies that a master user can sign in and land on the correct protected dashboard.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the master role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the master dashboard is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Create and launch a single-screen campaign from assigned screens",
+    "description": "This verifies that an admin can build a campaign with valid details, target screens or groups, and launch it successfully.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/campaigns"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a campaign"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the campaign name field with a unique campaign name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in valid campaign dates"
+      },
+      {
+        "type": "action",
+        "description": "Select single-screen campaign mode"
+      },
+      {
+        "type": "action",
+        "description": "Select a target screen or screen group"
+      },
+      {
+        "type": "action",
+        "description": "Launch the campaign"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a campaign launch confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Block access to the admin dashboard without authentication",
+    "description": "This test verifies that an unauthenticated user cannot open the admin dashboard and is sent to the login flow.",
+    "category": "Admin Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /admin/dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login page is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Block admin-only pages from unauthenticated access",
+    "description": "This verifies that protected admin routes cannot be opened without signing in.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /admin/screens"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login page is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Block access to the master dashboard without authentication",
+    "description": "This test verifies that an unauthenticated user cannot open the master dashboard and is sent to the login flow.",
+    "category": "Admin Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /master/dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login page is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Pair a new screen to an admin account",
+    "description": "This test verifies that a Master user can pair a new Android TV screen using a valid pairing code and assign it to an admin successfully.",
+    "category": "Pair Screen (Master)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open screen pairing"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the screen name field with a unique screen name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the pairing code field with a valid 6-digit code"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the admin email field with a valid admin email"
+      },
+      {
+        "type": "action",
+        "description": "Submit the screen pairing form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a pairing success confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new screen is shown as paired"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Create and launch a split-grid campaign",
+    "description": "This test verifies that an admin can configure a split-grid campaign, assign a playlist to every zone, and launch it successfully.",
+    "category": "Campaign Creation - Multiple Screen (Split Grid)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the Admin Panel role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/campaigns"
+      },
+      {
+        "type": "action",
+        "description": "Start a new campaign"
+      },
+      {
+        "type": "action",
+        "description": "Select the split-grid display mode"
+      },
+      {
+        "type": "action",
+        "description": "Enter a campaign name"
+      },
+      {
+        "type": "action",
+        "description": "Select valid start and end dates"
+      },
+      {
+        "type": "action",
+        "description": "Choose a grid preset or set rows and columns manually"
+      },
+      {
+        "type": "action",
+        "description": "Assign a playlist to each zone"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one target screen or screen group"
+      },
+      {
+        "type": "action",
+        "description": "Launch the campaign"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a split-screen success confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Protect master-only pages from admin access",
+    "description": "This verifies that an admin cannot open master-only management pages without the correct role.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /master/admins"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access to the login page or unauthorized state is shown"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Create and launch a single-screen campaign",
+    "description": "This test verifies that an admin can create a single-screen campaign by selecting a playlist and targets and then receive a success confirmation.",
+    "category": "Campaign Creation - Single Screen",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the Admin Panel role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/campaigns"
+      },
+      {
+        "type": "action",
+        "description": "Start a new campaign"
+      },
+      {
+        "type": "action",
+        "description": "Select the single-screen display mode"
+      },
+      {
+        "type": "action",
+        "description": "Enter a campaign name"
+      },
+      {
+        "type": "action",
+        "description": "Select valid start and end dates"
+      },
+      {
+        "type": "action",
+        "description": "Select a playlist"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one target screen or screen group"
+      },
+      {
+        "type": "action",
+        "description": "Launch the campaign"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a campaign success confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Pair a new Android TV screen to a master admin",
+    "description": "This verifies that a master can enter a pairing code, assign the screen to an admin, and complete pairing successfully.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the master role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /master/pair"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the pairing code field with a valid 6-digit code"
+      },
+      {
+        "type": "action",
+        "description": "Select the target admin"
+      },
+      {
+        "type": "action",
+        "description": "Submit the pairing form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the paired screen appears in the screen management view"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Create a new admin account from the master panel",
+    "description": "This test verifies that a Master user can create a new admin account and see it appear in the admin list.",
+    "category": "Manage Admins (Master)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to manage admins"
+      },
+      {
+        "type": "action",
+        "description": "Open the add admin form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the full name field with a unique admin name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a unique admin email"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the admin creation form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an admin creation success confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new admin appears in the admin list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Create and then remove an admin account",
+    "description": "This verifies that a master can create a new admin account and delete an admin through the confirmation flow.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the master role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /master/admins"
+      },
+      {
+        "type": "action",
+        "description": "Create a new admin account"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the new admin details"
+      },
+      {
+        "type": "action",
+        "description": "Save the new admin account"
+      },
+      {
+        "type": "action",
+        "description": "Delete the newly created admin account"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the delete action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the admin list no longer shows the deleted admin"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Create a new admin account",
+    "description": "This test verifies that a master user can create a new admin account and see it appear in the admin list.",
+    "category": "Master Admin Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the Master Panel role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /master/admins"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a new admin account"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the required admin account details"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new admin form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new admin appears in the admin list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Remove an existing admin through the delete confirmation flow",
+    "description": "This test verifies that a Master user can delete an existing admin after confirming the action and see the admin removed from the list.",
+    "category": "Manage Admins (Master)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to manage admins"
+      },
+      {
+        "type": "action",
+        "description": "Open the menu for an existing admin"
+      },
+      {
+        "type": "action",
+        "description": "Choose the delete action"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the deletion"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a deletion success confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the deleted admin is removed from the list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Delete an existing admin account through confirmation",
+    "description": "This test verifies that a master user can delete an existing admin account after confirming the delete action.",
+    "category": "Master Admin Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the Master Panel role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /master/admins"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a new admin account"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the required admin account details"
+      },
+      {
+        "type": "action",
+        "description": "Submit the new admin form"
+      },
+      {
+        "type": "action",
+        "description": "Delete the newly created admin account"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the delete action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the admin is removed from the admin list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Upload a media asset from the admin media page",
+    "description": "This verifies that an admin can select a media file, preview it, and complete an upload.",
+    "category": "Media Upload",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/media"
+      },
+      {
+        "type": "action",
+        "description": "Choose a media file"
+      },
+      {
+        "type": "action",
+        "description": "Upload the media asset"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the uploaded media appears in the media list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Create a new screen group from the admin screens page",
+    "description": "This verifies that an admin can create a new group and save selected screens into it.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/screens"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a new group"
+      },
+      {
+        "type": "action",
+        "description": "Select one or more screens for the group"
+      },
+      {
+        "type": "action",
+        "description": "Save the group assignment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new group is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC020",
+    "title": "Review playback logs in the proof of play table",
+    "description": "This test verifies that an Admin can open proof of play analytics and review playback log rows with the expected details.",
+    "category": "Proof of Play Analytics",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open proof of play analytics"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify playback log rows are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify playback details are displayed for each row"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC021",
+    "title": "Create a playlist from uploaded media",
+    "description": "This verifies that an admin can name a playlist, select media assets, and save the playlist.",
+    "category": "Playlist Builder",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/playlists"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a playlist"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the playlist name field with a unique playlist name"
+      },
+      {
+        "type": "action",
+        "description": "Select one or more uploaded media assets"
+      },
+      {
+        "type": "action",
+        "description": "Save the playlist"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new playlist is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC022",
+    "title": "See all playback columns for assigned screens",
+    "description": "This test verifies that an Admin can inspect the playback log table and confirm the expected screen, campaign, media, preview, duration, status, and timestamp information is available.",
+    "category": "Proof of Play Analytics",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open proof of play analytics"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify screen and campaign information are displayed in the playback log"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify media, preview, duration, status, and timestamp information are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC023",
+    "title": "Assign an existing group to a screen",
+    "description": "This verifies that an admin can change a screen's group assignment from the screen list.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/screens"
+      },
+      {
+        "type": "action",
+        "description": "Open the menu for a screen"
+      },
+      {
+        "type": "action",
+        "description": "Choose to change the screen group"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing group"
+      },
+      {
+        "type": "action",
+        "description": "Save the group assignment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the screen shows the updated group assignment"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC024",
+    "title": "See the admin proof of play page load with log data",
+    "description": "This test verifies that an Admin can open the proof of play page and view the available playback log data without needing any additional setup.",
+    "category": "Proof of Play Analytics",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open proof of play analytics"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify playback log data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the table contains multiple playback entries"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Keep screen pairing blocked until required details are entered",
+    "description": "This test verifies that the screen pairing form does not succeed when required fields are missing or the pairing code is not valid.",
+    "category": "Pair Screen (Master)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open screen pairing"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the screen name field with a unique screen name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the pairing code field with an invalid pairing code"
+      },
+      {
+        "type": "action",
+        "description": "Leave the admin email field empty"
+      },
+      {
+        "type": "action",
+        "description": "Submit the screen pairing form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a pairing validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the screen is not paired"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Show an error when the selected role does not match the account",
+    "description": "This test verifies that logging in with valid credentials under the wrong role is rejected with a visible sign-in error.",
+    "category": "Admin Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the Admin Panel role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a sign-in error message is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC027",
+    "title": "Prevent duplicate playlist names",
+    "description": "This verifies that the playlist builder rejects a name that already exists and keeps the original playlist intact.",
+    "category": "Playlist Builder",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/playlists"
+      },
+      {
+        "type": "action",
+        "description": "Start creating a playlist"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the playlist name field with a unique playlist name"
+      },
+      {
+        "type": "action",
+        "description": "Select one or more uploaded media assets"
+      },
+      {
+        "type": "action",
+        "description": "Save the playlist"
+      },
+      {
+        "type": "action",
+        "description": "Start creating another playlist"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the playlist name field with the same playlist name"
+      },
+      {
+        "type": "action",
+        "description": "Select one or more uploaded media assets"
+      },
+      {
+        "type": "action",
+        "description": "Save the playlist"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a duplicate playlist validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC028",
+    "title": "Reject an invalid Android TV pairing code",
+    "description": "This verifies that the pairing form shows validation feedback when the code is not a valid 6-digit value.",
+    "category": "Screen Grouping",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the master role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /master/pair"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the pairing code field with an invalid code"
+      },
+      {
+        "type": "action",
+        "description": "Submit the pairing form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a pairing code validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC029",
+    "title": "Keep a deleted admin when deletion is canceled",
+    "description": "This test verifies that canceling the delete confirmation leaves the selected admin account unchanged in the list.",
+    "category": "Manage Admins (Master)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to manage admins"
+      },
+      {
+        "type": "action",
+        "description": "Open the menu for an existing admin"
+      },
+      {
+        "type": "action",
+        "description": "Choose the delete action"
+      },
+      {
+        "type": "action",
+        "description": "Cancel the deletion"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the delete confirmation is dismissed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the admin remains in the list"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC030",
+    "title": "Warn when a split-grid campaign has an unassigned zone",
+    "description": "This test verifies that attempting to launch a split-grid campaign with a missing zone playlist shows a validation warning instead of a successful launch.",
+    "category": "Campaign Creation - Multiple Screen (Split Grid)",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the Admin Panel role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign-in form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/campaigns"
+      },
+      {
+        "type": "action",
+        "description": "Start a new campaign"
+      },
+      {
+        "type": "action",
+        "description": "Select the split-grid display mode"
+      },
+      {
+        "type": "action",
+        "description": "Enter a campaign name"
+      },
+      {
+        "type": "action",
+        "description": "Select valid start and end dates"
+      },
+      {
+        "type": "action",
+        "description": "Choose a grid preset or set rows and columns manually"
+      },
+      {
+        "type": "action",
+        "description": "Assign a playlist to some but not all zones"
+      },
+      {
+        "type": "action",
+        "description": "Select at least one target screen or screen group"
+      },
+      {
+        "type": "action",
+        "description": "Launch the campaign"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a zone assignment validation warning is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC031",
+    "title": "Prevent empty media upload submission",
+    "description": "This verifies that the media upload form shows validation feedback when no file is chosen.",
+    "category": "Media Upload",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Select the admin role"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /admin/media"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to upload media without choosing a file"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a media upload validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  }
+]
