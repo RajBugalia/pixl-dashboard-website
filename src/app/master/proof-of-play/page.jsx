@@ -3,19 +3,17 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
   Clock,
   Tv,
   Search,
   Download,
   Film,
-  RotateCw,
   Layers,
-  Users,
-  X,
-  ArrowUpRight
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
-import Link from 'next/link';
 import client from '@/api/client';
 
 export default function MasterProofOfPlay() {
@@ -23,7 +21,11 @@ export default function MasterProofOfPlay() {
   const [screens, setScreens] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+
+  // View Mode: 'SUMMARY' (Consolidated by Campaign + Media + Screen) or 'STREAM' (Individual playback receipts)
+  const [viewMode, setViewMode] = useState('SUMMARY');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,8 +33,7 @@ export default function MasterProofOfPlay() {
   const [selectedAdminFilter, setSelectedAdminFilter] = useState('ALL');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL');
 
-  const loadData = useCallback(async (isManual = false) => {
-    if (isManual) setRefreshing(true);
+  const loadData = useCallback(async () => {
     try {
       const [logRes, screenRes, adminRes] = await Promise.allSettled([
         client.get('/master/proof-of-play'),
@@ -53,13 +54,33 @@ export default function MasterProofOfPlay() {
       console.error('Error fetching master proof of play:', err);
     } finally {
       setLoading(false);
-      if (isManual) setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Robust ISO Parser ensuring UTC timestamps from DigitalOcean backend parse accurately in browser's local timezone
+  const parsePlayedDate = useCallback((dateStr) => {
+    if (!dateStr) return null;
+    let str = String(dateStr).trim();
+    // If backend sent ISO without timezone offset, append 'Z' so it's strictly parsed as UTC
+    if (!str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+      str += 'Z';
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date(dateStr) : d;
+  }, []);
+
+  // Format Duration in mm:ss or human readable string
+  const formatDuration = useCallback((seconds) => {
+    const s = Math.round(Number(seconds) || 0);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+  }, []);
 
   // Distinct screens from logs and fleet
   const distinctScreens = useMemo(() => {
@@ -75,20 +96,31 @@ export default function MasterProofOfPlay() {
     return Array.from(new Set([...fromLogs, ...fromDirectory]));
   }, [logs, admins]);
 
+  // Deduplicated Logs: Prevents duplicate packets with identical screen, media, campaign, and timestamp
+  const deduplicatedLogs = useMemo(() => {
+    const seen = new Set();
+    return logs.filter(log => {
+      const key = `${log.screenName || ''}__${log.mediaName || ''}__${log.campaignName || ''}__${log.playedAt || log.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [logs]);
+
   // Dynamic Telemetry Metrics (Real Data Only — Zero Hardware Telemetry)
   const metrics = useMemo(() => {
-    const total = logs.length;
-    const completed = logs.filter(l => l.status === 'COMPLETED').length;
+    const total = deduplicatedLogs.length;
+    const completed = deduplicatedLogs.filter(l => l.status === 'COMPLETED').length;
     const successRate = total > 0 ? ((completed / total) * 100).toFixed(1) : '100.0';
 
     // Unique screens logging playback
-    const uniqueLoggedScreens = new Set(logs.map(l => l.screenName).filter(Boolean));
+    const uniqueLoggedScreens = new Set(deduplicatedLogs.map(l => l.screenName).filter(Boolean));
 
     // Unique admins with logged playback
-    const uniqueLoggedAdmins = new Set(logs.map(l => l.adminEmail).filter(Boolean));
+    const uniqueLoggedAdmins = new Set(deduplicatedLogs.map(l => l.adminEmail).filter(Boolean));
 
     // Total airtime duration in seconds and hours
-    const totalDurationSeconds = logs.reduce((acc, l) => acc + (Number(l.duration) || 0), 0);
+    const totalDurationSeconds = deduplicatedLogs.reduce((acc, l) => acc + (Number(l.duration) || 0), 0);
     const totalHours = (totalDurationSeconds / 3600).toFixed(1);
     const totalMinutes = Math.round(totalDurationSeconds / 60);
 
@@ -101,19 +133,19 @@ export default function MasterProofOfPlay() {
       totalHours,
       totalMinutes
     };
-  }, [logs]);
+  }, [deduplicatedLogs]);
 
   // Filtered Logs
   const filteredLogs = useMemo(() => {
-    return logs.filter(log => {
+    return deduplicatedLogs.filter(log => {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesScreen = log.screenName?.toLowerCase().includes(q);
-        const matchesCampaign = log.campaignName?.toLowerCase().includes(q);
-        const matchesMedia = log.mediaName?.toLowerCase().includes(q);
-        const matchesAdmin = log.adminEmail?.toLowerCase().includes(q);
-        if (!matchesScreen && !matchesCampaign && !matchesMedia && !matchesAdmin) return false;
+        const matchScreen = log.screenName?.toLowerCase().includes(q);
+        const matchCampaign = log.campaignName?.toLowerCase().includes(q);
+        const matchMedia = log.mediaName?.toLowerCase().includes(q);
+        const matchAdmin = log.adminEmail?.toLowerCase().includes(q);
+        if (!matchScreen && !matchCampaign && !matchMedia && !matchAdmin) return false;
       }
 
       // Screen filter
@@ -134,67 +166,93 @@ export default function MasterProofOfPlay() {
 
       return true;
     });
-  }, [logs, searchQuery, selectedScreenFilter, selectedAdminFilter, selectedStatusFilter]);
+  }, [deduplicatedLogs, searchQuery, selectedScreenFilter, selectedAdminFilter, selectedStatusFilter]);
 
-  // Tenant Admin Delivery Summary
-  const adminDeliveryStats = useMemo(() => {
-    return distinctAdmins.map(adminEmail => {
-      const adminLogs = logs.filter(l => l.adminEmail === adminEmail);
-      const totalAirtime = adminLogs.reduce((acc, l) => acc + (Number(l.duration) || 0), 0);
-      return {
-        email: adminEmail,
-        playCount: adminLogs.length,
-        airtimeSeconds: totalAirtime
-      };
-    }).sort((a, b) => b.playCount - a.playCount);
-  }, [distinctAdmins, logs]);
+  // Aggregated Summary Groups (Campaign + Media Asset + Screen)
+  const aggregatedGroups = useMemo(() => {
+    const map = new Map();
+    filteredLogs.forEach(log => {
+      const groupKey = `${log.campaignName || 'Standard Loop'}__${log.mediaName || 'Media'}__${log.screenName || 'Screen'}`;
+      const logDate = parsePlayedDate(log.playedAt);
 
-  // Export Full Audit CSV
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          key: groupKey,
+          campaignName: log.campaignName || 'Standard Loop',
+          mediaName: log.mediaName,
+          mediaUrl: log.mediaUrl,
+          mediaType: log.mediaType,
+          screenName: log.screenName,
+          adminEmail: log.adminEmail,
+          totalPlays: 1,
+          totalDuration: Number(log.duration) || 0,
+          latestDate: logDate,
+          status: log.status || 'COMPLETED'
+        });
+      } else {
+        const existing = map.get(groupKey);
+        existing.totalPlays += 1;
+        existing.totalDuration += (Number(log.duration) || 0);
+        if (logDate && (!existing.latestDate || logDate > existing.latestDate)) {
+          existing.latestDate = logDate;
+        }
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (!a.latestDate) return 1;
+      if (!b.latestDate) return -1;
+      return b.latestDate - a.latestDate;
+    });
+  }, [filteredLogs, parsePlayedDate]);
+
+  // Pagination for Stream View
+  const totalPages = Math.ceil(filteredLogs.length / pageSize) || 1;
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, currentPage, pageSize]);
+
+  // Reset pagination on filter or view changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedScreenFilter, selectedAdminFilter, selectedStatusFilter, viewMode]);
+
+  // Export CSV
   const handleExportCSV = () => {
     if (filteredLogs.length === 0) return;
-    const headers = ['Timestamp', 'Screen', 'Tenant Admin', 'Campaign', 'Media Asset', 'Media Type', 'Duration (seconds)', 'Status'];
-    const rows = filteredLogs.map(log => [
-      `"${log.playedAt ? new Date(log.playedAt).toISOString() : new Date().toISOString()}"`,
-      `"${log.screenName || 'Unknown Screen'}"`,
-      `"${log.adminEmail || 'Unassigned'}"`,
-      `"${log.campaignName || 'Unknown Campaign'}"`,
-      `"${log.mediaName || 'Media Clip'}"`,
-      `"${log.mediaType || 'VIDEO'}"`,
-      log.duration || 0,
-      `"${log.status || 'COMPLETED'}"`
-    ]);
+    const headers = ['Timestamp (Local)', 'Screen', 'Tenant Admin', 'Campaign', 'Media Asset', 'Media Type', 'Airtime (seconds)', 'Status'];
+    const rows = filteredLogs.map(log => {
+      const d = parsePlayedDate(log.playedAt);
+      const ts = d ? d.toLocaleString() : 'N/A';
+      return [
+        `"${ts}"`,
+        `"${log.screenName || 'Unknown Screen'}"`,
+        `"${log.adminEmail || 'Unassigned'}"`,
+        `"${log.campaignName || 'Standard Loop'}"`,
+        `"${log.mediaName || 'Media Clip'}"`,
+        `"${log.mediaType || 'VIDEO'}"`,
+        log.duration || 0,
+        `"${log.status || 'COMPLETED'}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `master_proof_of_play_audit_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `master_proof_of_play_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem' }}>
-        <RotateCw className="animate-spin" size={32} style={{ color: 'var(--accent-color)' }} />
-        <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Loading Network Playback Audit Ledger...</p>
-      </div>
-    );
-  }
-
   return (
     <>
-      {/* 1. Header & Operational Matrix Command Bar */}
+      {/* 1. Header Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              NETWORK AUDIT LEDGER • GLOBAL PROOF OF PLAY
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <h1 className="page-title" style={{ margin: 0 }}>Proof of Play Analytics</h1>
             <span style={{
               display: 'inline-flex',
@@ -207,104 +265,66 @@ export default function MasterProofOfPlay() {
               fontSize: '0.75rem',
               fontWeight: 700
             }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A' }}></span>
               {metrics.total} Verified Receipts
             </span>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DBEAFE',
-              color: '#1D4ED8',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.successRate}% Delivery SLA
-            </span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.35rem' }}>
-            Global cryptographic playback receipts recorded across all regional tenant screens and broadcast campaigns.
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            Multi-tenant hardware audit ledger verifying real-time playback, broadcast durations, and campaign impressions.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => loadData(true)}
-            disabled={refreshing}
-            className="btn-secondary"
-            title="Reload Network Telemetry"
-            style={{
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.88rem',
-              background: '#ffffff',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              cursor: refreshing ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <RotateCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
-          </button>
-
-          <button
-            onClick={handleExportCSV}
-            disabled={logs.length === 0}
-            className="btn-primary"
-            style={{
-              width: 'auto',
-              padding: '0.55rem 1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              opacity: logs.length === 0 ? 0.6 : 1,
-              cursor: logs.length === 0 ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <Download size={16} />
-            <span>Export Audit (CSV)</span>
-          </button>
-        </div>
+        <button
+          onClick={handleExportCSV}
+          disabled={logs.length === 0}
+          className="btn-primary"
+          style={{
+            width: 'auto',
+            padding: '0.5rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            fontSize: '0.88rem',
+            opacity: logs.length === 0 ? 0.6 : 1,
+            cursor: logs.length === 0 ? 'not-allowed' : 'pointer'
+          }}
+        >
+          <Download size={16} />
+          <span>Export Master Audit (CSV)</span>
+        </button>
       </div>
 
-      {/* 2. Top Metric Telemetry Cards (Real Data Only — Zero Hardware Telemetry) */}
+      {/* 2. Top Metric Cards */}
       <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Verified Events */}
+        {/* Card 1: Total Verified Plays */}
         <div className="screen-stat-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Verified Events
+              Playback Receipts
             </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB' }}>
-              <ShieldCheck size={18} />
+            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#DBEAFE', color: '#1D4ED8' }}>
+              <Film size={18} />
             </span>
           </div>
           <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
             {metrics.total}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span style={{ color: '#15803D', fontWeight: 600 }}>{metrics.completed} Completed</span>
-            <span>•</span>
-            <span>{metrics.total - metrics.completed} In-flight</span>
+          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            Cryptographically audited impressions
           </div>
         </div>
 
-        {/* Card 2: Delivery SLA Rate */}
+        {/* Card 2: Playback Delivery SLA */}
         <div className="screen-stat-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Airtime Delivery SLA
+              Playback SLA Met
             </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#ECFDF5', color: '#059669' }}>
+            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#DCFCE7', color: '#15803D' }}>
               <CheckCircle2 size={18} />
             </span>
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>
             {metrics.successRate}%
           </div>
           <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -353,7 +373,7 @@ export default function MasterProofOfPlay() {
       <div className="glass-panel" style={{ padding: '0.85rem 1.25rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
           {/* Search Input */}
-          <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: '380px' }}>
+          <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: '360px' }}>
             <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
             <input
               type="text"
@@ -371,6 +391,58 @@ export default function MasterProofOfPlay() {
                 <X size={14} />
               </button>
             )}
+          </div>
+
+          {/* View Mode Toggle: Summary (Grouped) vs Stream (Raw Receipts) */}
+          <div style={{
+            display: 'inline-flex',
+            background: '#F1F5F9',
+            borderRadius: '8px',
+            padding: '3px',
+            gap: '3px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setViewMode('SUMMARY')}
+              style={{
+                padding: '0.4rem 0.8rem',
+                borderRadius: '6px',
+                border: 'none',
+                background: viewMode === 'SUMMARY' ? '#FFFFFF' : 'transparent',
+                color: viewMode === 'SUMMARY' ? '#0F172A' : '#64748B',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                boxShadow: viewMode === 'SUMMARY' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Layers size={14} />
+              <span>Summary ({aggregatedGroups.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('STREAM')}
+              style={{
+                padding: '0.4rem 0.8rem',
+                borderRadius: '6px',
+                border: 'none',
+                background: viewMode === 'STREAM' ? '#FFFFFF' : 'transparent',
+                color: viewMode === 'STREAM' ? '#0F172A' : '#64748B',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                boxShadow: viewMode === 'STREAM' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Activity size={14} />
+              <span>Event Stream ({filteredLogs.length})</span>
+            </button>
           </div>
 
           {/* Filters */}
@@ -420,7 +492,7 @@ export default function MasterProofOfPlay() {
                   cursor: 'pointer'
                 }}
               >
-                All Receipts ({logs.length})
+                All
               </button>
               <button
                 onClick={() => setSelectedStatusFilter('COMPLETED')}
@@ -442,255 +514,311 @@ export default function MasterProofOfPlay() {
         </div>
       </div>
 
-      {/* 4. Main Two-Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
-        
-        {/* Left Column (8 cols): Real-Time Proof-of-Play Audit Table */}
-        <div style={{ gridColumn: 'span 12', lg: 'span 8', minWidth: 0 }}>
-          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+      {/* 4. Main Table Section */}
+      <div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#64748B' }}>
+            <p>Loading master proof-of-play analytics...</p>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary)' }}>
+            <ShieldCheck size={44} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
+            <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem' }}>
+              No Verification Records Found
+            </h4>
+            <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: '400px', marginInline: 'auto' }}>
+              {searchQuery || selectedScreenFilter !== 'ALL' || selectedAdminFilter !== 'ALL'
+                ? 'No receipts matched your filter parameters. Try clearing your filters.'
+                : 'Physical displays will transmit verified receipts automatically as campaigns play.'}
+            </p>
+          </div>
+        ) : viewMode === 'SUMMARY' ? (
+          /* VIEW 1: CONSOLIDATED SUMMARY (Aggregated by Campaign + Media + Screen) */
+          <div className="glass-panel" style={{ padding: '1.25rem', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                  Playback Summary by Campaign &amp; Asset ({aggregatedGroups.length})
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0' }}>
+                  Consolidates looping playback impressions into verified totals per screen &amp; tenant
+                </p>
+              </div>
+
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                {aggregatedGroups.length} unique assets broadcasting
+              </span>
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #E2E8F0', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Media Asset</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Campaign</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Screen Node</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Tenant Admin</th>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>Total Plays</th>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Latest Play (Local)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aggregatedGroups.map(group => {
+                  const latestDate = group.latestDate;
+
+                  return (
+                    <tr key={group.key} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      {/* Media Asset Preview */}
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <div style={{
+                            width: 50,
+                            height: 30,
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            background: '#0F172A',
+                            flexShrink: 0
+                          }}>
+                            {group.mediaType?.startsWith('image') ? (
+                              <img src={group.mediaUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <video src={group.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: '170px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={group.mediaName}>
+                              {group.mediaName}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                              Total Airtime: {formatDuration(group.totalDuration)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Campaign */}
+                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {group.campaignName}
+                      </td>
+
+                      {/* Screen */}
+                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {group.screenName}
+                      </td>
+
+                      {/* Tenant Admin */}
+                      <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>
+                        {group.adminEmail || 'Unassigned'}
+                      </td>
+
+                      {/* Total Plays */}
+                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '0.2rem 0.65rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          background: '#EFF6FF',
+                          color: '#2563EB'
+                        }}>
+                          {group.totalPlays} {group.totalPlays === 1 ? 'play' : 'plays'}
+                        </span>
+                      </td>
+
+                      {/* Latest Play Time (Formatted in Local Time) */}
+                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                          {latestDate ? latestDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          {latestDate ? latestDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* VIEW 2: DETAILED EVENT STREAM (Paginated receipts with local time) */
+          <div className="glass-panel" style={{ padding: '1.25rem', overflowX: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                   Playback Verification Ledger ({filteredLogs.length})
                 </h3>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0' }}>
-                  Audited hardware playback events with duration and timestamp verification
+                  Showing page {currentPage} of {totalPages} ({filteredLogs.length} verified receipts total)
                 </p>
               </div>
 
               <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                Showing {filteredLogs.length} receipts
+                Audited hardware playback events
               </span>
             </div>
 
-            {filteredLogs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary)' }}>
-                <ShieldCheck size={44} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-                <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.5rem' }}>
-                  No Verification Records Found
-                </h4>
-                <p style={{ fontSize: '0.85rem', margin: 0, maxWidth: '400px', marginInline: 'auto' }}>
-                  {searchQuery || selectedScreenFilter !== 'ALL' || selectedAdminFilter !== 'ALL'
-                    ? 'No receipts matched your filter parameters. Try clearing your filters.'
-                    : 'Physical displays will transmit verified receipts automatically as campaigns play.'}
-                </p>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #E2E8F0', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      <th style={{ padding: '0.75rem 0.5rem' }}>Media Asset</th>
-                      <th style={{ padding: '0.75rem 0.5rem' }}>Screen Node</th>
-                      <th style={{ padding: '0.75rem 0.5rem' }}>Tenant Admin</th>
-                      <th style={{ padding: '0.75rem 0.5rem' }}>Campaign</th>
-                      <th style={{ padding: '0.75rem 0.5rem' }}>Airtime</th>
-                      <th style={{ padding: '0.75rem 0.5rem' }}>Timestamp</th>
-                      <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Status</th>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #E2E8F0', color: 'var(--text-secondary)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Media Asset</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Screen Node</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Tenant Admin</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Campaign</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Airtime</th>
+                  <th style={{ padding: '0.75rem 0.5rem' }}>Timestamp (Local)</th>
+                  <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedLogs.map(log => {
+                  const isCompleted = log.status === 'COMPLETED';
+                  const playedDate = parsePlayedDate(log.playedAt);
+
+                  return (
+                    <tr key={log.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      {/* Media Asset Preview */}
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <div style={{
+                            width: 50,
+                            height: 30,
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            background: '#0F172A',
+                            flexShrink: 0
+                          }}>
+                            {log.mediaType?.startsWith('image') ? (
+                              <img src={log.mediaUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <video src={log.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.mediaName}>
+                              {log.mediaName}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                              {log.mediaType || 'VIDEO'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Screen Node */}
+                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {log.screenName}
+                      </td>
+
+                      {/* Tenant Admin */}
+                      <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>
+                        {log.adminEmail || 'Unassigned'}
+                      </td>
+
+                      {/* Campaign */}
+                      <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>
+                        {log.campaignName || 'Standard Loop'}
+                      </td>
+
+                      {/* Duration */}
+                      <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {log.duration ? `${log.duration}s` : '10s'}
+                      </td>
+
+                      {/* Timestamp in User's Local Time */}
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
+                          {playedDate ? playedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          {playedDate ? playedDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background: isCompleted ? '#DCFCE7' : '#FEE2E2',
+                          color: isCompleted ? '#15803D' : '#DC2626'
+                        }}>
+                          <span style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: '50%',
+                            background: isCompleted ? '#16A34A' : '#DC2626'
+                          }}></span>
+                          {isCompleted ? 'Verified' : (log.status || 'Flagged')}
+                        </span>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredLogs.map(log => {
-                      const isCompleted = log.status === 'COMPLETED';
-                      const formattedTime = log.playedAt
-                        ? new Date(log.playedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                        : 'Just now';
-                      const formattedDate = log.playedAt
-                        ? new Date(log.playedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
-                        : '';
+                  );
+                })}
+              </tbody>
+            </table>
 
-                      return (
-                        <tr key={log.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                          {/* Media Asset Preview */}
-                          <td style={{ padding: '0.75rem 0.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                              <div style={{
-                                width: 56,
-                                height: 34,
-                                borderRadius: '6px',
-                                overflow: 'hidden',
-                                background: '#0F172A',
-                                flexShrink: 0,
-                                position: 'relative',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}>
-                                {log.mediaUrl ? (
-                                  log.mediaType?.startsWith('image') ? (
-                                    <img src={log.mediaUrl} alt={log.mediaName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                  ) : (
-                                    <video src={log.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
-                                  )
-                                ) : (
-                                  <Film size={16} color="#94A3B8" />
-                                )}
-                              </div>
-                              <div style={{ overflow: 'hidden' }}>
-                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }} title={log.mediaName}>
-                                  {log.mediaName}
-                                </div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                                  {log.mediaType || 'VIDEO'}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Screen Node */}
-                          <td style={{ padding: '0.75rem 0.5rem' }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                              {log.screenName}
-                            </div>
-                          </td>
-
-                          {/* Tenant Admin */}
-                          <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                            {log.adminEmail || 'Unassigned'}
-                          </td>
-
-                          {/* Campaign */}
-                          <td style={{ padding: '0.75rem 0.5rem' }}>
-                            <span style={{
-                              padding: '0.15rem 0.45rem',
-                              borderRadius: '4px',
-                              background: '#F1F5F9',
-                              color: 'var(--text-primary)',
-                              fontSize: '0.75rem',
-                              fontWeight: 600
-                            }}>
-                              {log.campaignName}
-                            </span>
-                          </td>
-
-                          {/* Airtime */}
-                          <td style={{ padding: '0.75rem 0.5rem' }}>
-                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {log.duration}s
-                            </span>
-                          </td>
-
-                          {/* Timestamp */}
-                          <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            <div>{formattedTime}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>{formattedDate}</div>
-                          </td>
-
-                          {/* Status */}
-                          <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.25rem',
-                              padding: '0.2rem 0.55rem',
-                              borderRadius: '9999px',
-                              background: isCompleted ? '#DCFCE7' : '#FEE2E2',
-                              color: isCompleted ? '#15803D' : '#DC2626',
-                              fontSize: '0.72rem',
-                              fontWeight: 700
-                            }}>
-                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isCompleted ? '#16A34A' : '#DC2626' }}></span>
-                              {isCompleted ? 'Verified' : 'Failed'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column (4 cols): Regional Tenant Breakdown & SLA Integrity */}
-        <aside style={{ gridColumn: 'span 12', lg: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
-          {/* Tenant Admin Airtime Matrix */}
-          <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <div>
-                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', margin: 0 }}>
-                  Tenant Delivery Matrix
-                </h4>
-                <span style={{ fontSize: '0.72rem', color: '#2563EB', fontWeight: 600 }}>Regional Airtime Breakdown</span>
-              </div>
-              <Link href="/master/admins" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-color)' }}>
-                Admins
-              </Link>
-            </div>
-
-            {adminDeliveryStats.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: 0 }}>No tenant airtime recorded.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {adminDeliveryStats.slice(0, 6).map(item => (
-                  <div
-                    key={item.email}
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingTop: '1rem',
+                marginTop: '0.75rem',
+                borderTop: '1px solid #E2E8F0',
+                fontSize: '0.82rem',
+                color: '#64748B'
+              }}>
+                <div>
+                  Page <strong style={{ color: '#0F172A' }}>{currentPage}</strong> of <strong style={{ color: '#0F172A' }}>{totalPages}</strong>
+                </div>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="btn-secondary"
                     style={{
-                      padding: '0.65rem 0.75rem',
-                      borderRadius: '8px',
-                      background: '#F8FAFC',
-                      border: '1px solid #E2E8F0',
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.78rem',
+                      opacity: currentPage === 1 ? 0.4 : 1,
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between'
+                      gap: '0.2rem'
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
-                        {item.email}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                        Airtime: {Math.round(item.airtimeSeconds / 60)} mins logged
-                      </div>
-                    </div>
-
-                    <span style={{
-                      padding: '0.15rem 0.45rem',
-                      borderRadius: '4px',
-                      background: '#EFF6FF',
-                      color: '#1D4ED8',
-                      fontSize: '0.72rem',
-                      fontWeight: 700
-                    }}>
-                      {item.playCount} plays
-                    </span>
-                  </div>
-                ))}
+                    <ChevronLeft size={14} />
+                    <span>Previous</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="btn-secondary"
+                    style={{
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.78rem',
+                      opacity: currentPage === totalPages ? 0.4 : 1,
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem'
+                    }}
+                  >
+                    <span>Next</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
-
-          {/* SLA Compliance Summary */}
-          <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }}></div>
-              <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>
-                Audit SLA Compliance
-              </h4>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Delivery SLA Standard:</span>
-                <strong style={{ color: '#059669' }}>99.5% Minimum</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Fleet Performance:</span>
-                <strong style={{ color: 'var(--text-primary)' }}>{metrics.successRate}% Nominal</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Receipt Encryption:</span>
-                <strong style={{ color: 'var(--text-primary)' }}>Cryptographic SHA-256</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Auto-Purge Retention:</span>
-                <strong style={{ color: 'var(--text-primary)' }}>90-Day Enterprise SLA</strong>
-              </div>
-            </div>
-          </div>
-        </aside>
+        )}
       </div>
     </>
   );

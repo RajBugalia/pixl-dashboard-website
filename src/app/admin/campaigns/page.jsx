@@ -343,6 +343,8 @@ export default function Campaigns() {
       .slice(0, 4);
   }, [campaigns]);
 
+  const currentNow = new Date();
+
   return (
     <>
       {/* Page Header */}
@@ -832,9 +834,9 @@ export default function Campaigns() {
                 filteredCampaigns.map((camp) => {
                   const s = new Date(camp.startDate);
                   const e = new Date(camp.endDate);
-                  const isLive = now >= s && now <= e;
-                  const isUpcoming = now < s;
-                  const isCompleted = now > e;
+                  const isLive = currentNow >= s && currentNow <= e;
+                  const isUpcoming = currentNow < s;
+                  const isCompleted = currentNow > e;
 
                   // Target screens details
                   const targetList = Array.isArray(camp.targetScreens) ? camp.targetScreens : [];
@@ -1174,7 +1176,7 @@ export default function Campaigns() {
 
                     {upcomingTimeline.map(c => {
                       const s = new Date(c.startDate);
-                      const isNowLive = now >= s && now <= new Date(c.endDate);
+                      const isNowLive = currentNow >= s && currentNow <= new Date(c.endDate);
                       return (
                         <div key={c.id} style={{ position: 'relative' }}>
                           <span style={{

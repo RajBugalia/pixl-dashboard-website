@@ -3,16 +3,15 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
   Clock,
   Tv,
   Search,
   Download,
   Film,
-  RotateCw,
-  FileText,
+  Layers,
   Activity,
-  Layers
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import client from '@/api/client';
 
@@ -20,6 +19,11 @@ export default function AdminProofOfPlay() {
   const [logs, setLogs] = useState([]);
   const [screens, setScreens] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // View Mode: 'SUMMARY' (Consolidated by Campaign + Media + Screen) or 'STREAM' (Individual playback receipts)
+  const [viewMode, setViewMode] = useState('SUMMARY');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +54,27 @@ export default function AdminProofOfPlay() {
     loadData();
   }, [loadData]);
 
+  // Robust ISO Parser ensuring UTC timestamps from DigitalOcean backend parse accurately in browser's local timezone
+  const parsePlayedDate = useCallback((dateStr) => {
+    if (!dateStr) return null;
+    let str = String(dateStr).trim();
+    // If backend sent ISO without timezone offset, append 'Z' so it's strictly parsed as UTC
+    if (!str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+      str += 'Z';
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date(dateStr) : d;
+  }, []);
+
+  // Format Duration in mm:ss or human readable string
+  const formatDuration = useCallback((seconds) => {
+    const s = Math.round(Number(seconds) || 0);
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+  }, []);
+
   // Distinct screens from logs and fleet
   const distinctScreens = useMemo(() => {
     const fromLogs = logs.map(l => l.screenName).filter(Boolean);
@@ -57,17 +82,28 @@ export default function AdminProofOfPlay() {
     return Array.from(new Set([...fromLogs, ...fromFleet]));
   }, [logs, screens]);
 
+  // Deduplicated Logs: Prevents duplicate packets with identical screen, media, campaign, and timestamp
+  const deduplicatedLogs = useMemo(() => {
+    const seen = new Set();
+    return logs.filter(log => {
+      const key = `${log.screenName || ''}__${log.mediaName || ''}__${log.campaignName || ''}__${log.playedAt || log.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [logs]);
+
   // Dynamic Metrics (Real Data Only - NO temp, storage, ram)
   const metrics = useMemo(() => {
-    const total = logs.length;
-    const completed = logs.filter(l => l.status === 'COMPLETED').length;
+    const total = deduplicatedLogs.length;
+    const completed = deduplicatedLogs.filter(l => l.status === 'COMPLETED').length;
     const successRate = total > 0 ? ((completed / total) * 100).toFixed(1) : '100.0';
 
     // Unique screens that have logged playback
-    const uniqueLoggedScreens = new Set(logs.map(l => l.screenName).filter(Boolean));
+    const uniqueLoggedScreens = new Set(deduplicatedLogs.map(l => l.screenName).filter(Boolean));
 
     // Total airtime duration in seconds and hours
-    const totalDurationSeconds = logs.reduce((acc, l) => acc + (Number(l.duration) || 0), 0);
+    const totalDurationSeconds = deduplicatedLogs.reduce((acc, l) => acc + (Number(l.duration) || 0), 0);
     const totalHours = (totalDurationSeconds / 3600).toFixed(1);
     const totalMinutes = Math.round(totalDurationSeconds / 60);
 
@@ -79,11 +115,11 @@ export default function AdminProofOfPlay() {
       totalHours,
       totalMinutes
     };
-  }, [logs]);
+  }, [deduplicatedLogs]);
 
   // Filtered Logs
   const filteredLogs = useMemo(() => {
-    return logs.filter(log => {
+    return deduplicatedLogs.filter(log => {
       // Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -106,12 +142,62 @@ export default function AdminProofOfPlay() {
 
       return true;
     });
-  }, [logs, searchQuery, selectedScreenFilter, selectedStatusFilter]);
+  }, [deduplicatedLogs, searchQuery, selectedScreenFilter, selectedStatusFilter]);
+
+  // Aggregated Summary Groups (Campaign + Media Asset + Screen)
+  // Consolidates repeating playback loops into 1 clean summary row per asset
+  const aggregatedGroups = useMemo(() => {
+    const map = new Map();
+    filteredLogs.forEach(log => {
+      const groupKey = `${log.campaignName || 'Standard Loop'}__${log.mediaName || 'Media'}__${log.screenName || 'Screen'}`;
+      const logDate = parsePlayedDate(log.playedAt);
+
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          key: groupKey,
+          campaignName: log.campaignName || 'Standard Loop',
+          mediaName: log.mediaName,
+          mediaUrl: log.mediaUrl,
+          mediaType: log.mediaType,
+          screenName: log.screenName,
+          totalPlays: 1,
+          totalDuration: Number(log.duration) || 0,
+          latestDate: logDate,
+          status: log.status || 'COMPLETED'
+        });
+      } else {
+        const existing = map.get(groupKey);
+        existing.totalPlays += 1;
+        existing.totalDuration += (Number(log.duration) || 0);
+        if (logDate && (!existing.latestDate || logDate > existing.latestDate)) {
+          existing.latestDate = logDate;
+        }
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (!a.latestDate) return 1;
+      if (!b.latestDate) return -1;
+      return b.latestDate - a.latestDate;
+    });
+  }, [filteredLogs, parsePlayedDate]);
+
+  // Pagination for Stream View
+  const totalPages = Math.ceil(filteredLogs.length / pageSize) || 1;
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, currentPage, pageSize]);
+
+  // Reset pagination on filter or view changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedScreenFilter, selectedStatusFilter, viewMode]);
 
   // Screen Node delivery matrix derived dynamically
   const screenNodeStats = useMemo(() => {
     return screens.map(s => {
-      const screenLogs = logs.filter(l => l.screenName === s.name);
+      const screenLogs = deduplicatedLogs.filter(l => l.screenName === s.name);
       const isOnline = s.status === 'ONLINE' || s.status === 'ACTIVE';
       return {
         id: s.id,
@@ -121,21 +207,25 @@ export default function AdminProofOfPlay() {
         playCount: screenLogs.length
       };
     });
-  }, [screens, logs]);
+  }, [screens, deduplicatedLogs]);
 
   // Export Full Audit CSV
   const handleExportCSV = () => {
     if (filteredLogs.length === 0) return;
-    const headers = ['Timestamp', 'Screen', 'Campaign', 'Media Asset', 'Media Type', 'Duration (seconds)', 'Status'];
-    const rows = filteredLogs.map(log => [
-      `"${log.playedAt ? new Date(log.playedAt).toISOString() : new Date().toISOString()}"`,
-      `"${log.screenName || 'Unknown Screen'}"`,
-      `"${log.campaignName || 'Unknown Campaign'}"`,
-      `"${log.mediaName || 'Media Clip'}"`,
-      `"${log.mediaType || 'VIDEO'}"`,
-      log.duration || 0,
-      `"${log.status || 'COMPLETED'}"`
-    ]);
+    const headers = ['Timestamp (Local)', 'Screen', 'Campaign', 'Media Asset', 'Media Type', 'Duration (seconds)', 'Status'];
+    const rows = filteredLogs.map(log => {
+      const d = parsePlayedDate(log.playedAt);
+      const ts = d ? d.toLocaleString() : 'N/A';
+      return [
+        `"${ts}"`,
+        `"${log.screenName || 'Unknown Screen'}"`,
+        `"${log.campaignName || 'Unknown Campaign'}"`,
+        `"${log.mediaName || 'Media Clip'}"`,
+        `"${log.mediaType || 'VIDEO'}"`,
+        log.duration || 0,
+        `"${log.status || 'COMPLETED'}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -170,7 +260,7 @@ export default function AdminProofOfPlay() {
             </span>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Real-time audit ledger verifying physical display playback, broadcast durations, and campaign delivery.
+            Real-time audit ledger verifying physical display playback, broadcast airtime, and campaign delivery.
           </p>
         </div>
 
@@ -194,7 +284,7 @@ export default function AdminProofOfPlay() {
         </button>
       </div>
 
-      {/* 4 High-Impact Metric Cards (Stitch Design, 100% Dynamic) */}
+      {/* 4 High-Impact Metric Cards */}
       <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
         {/* Card 1: Total Playback Events */}
         <div className="screen-stat-card">
@@ -316,7 +406,7 @@ export default function AdminProofOfPlay() {
       {/* Filter & Search Ribbon */}
       <div className="screens-toolbar">
         {/* Search Input */}
-        <div style={{ position: 'relative', flex: 1, minWidth: '240px', maxWidth: '420px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '240px', maxWidth: '380px' }}>
           <Search size={16} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94A3B8' }} />
           <input
             type="text"
@@ -337,6 +427,58 @@ export default function AdminProofOfPlay() {
               outline: 'none'
             }}
           />
+        </div>
+
+        {/* View Mode Switcher: Summary (Grouped) vs Stream (Raw Receipts) */}
+        <div style={{
+          display: 'inline-flex',
+          background: '#F1F5F9',
+          borderRadius: '8px',
+          padding: '3px',
+          gap: '3px'
+        }}>
+          <button
+            type="button"
+            onClick={() => setViewMode('SUMMARY')}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '6px',
+              border: 'none',
+              background: viewMode === 'SUMMARY' ? '#FFFFFF' : 'transparent',
+              color: viewMode === 'SUMMARY' ? '#0F172A' : '#64748B',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              boxShadow: viewMode === 'SUMMARY' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}
+          >
+            <Layers size={14} />
+            <span>Summary ({aggregatedGroups.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('STREAM')}
+            style={{
+              padding: '0.4rem 0.8rem',
+              borderRadius: '6px',
+              border: 'none',
+              background: viewMode === 'STREAM' ? '#FFFFFF' : 'transparent',
+              color: viewMode === 'STREAM' ? '#0F172A' : '#64748B',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              boxShadow: viewMode === 'STREAM' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}
+          >
+            <Activity size={14} />
+            <span>Event Stream ({filteredLogs.length})</span>
+          </button>
         </div>
 
         {/* Filters */}
@@ -413,15 +555,16 @@ export default function AdminProofOfPlay() {
                 </button>
               )}
             </div>
-          ) : (
+          ) : viewMode === 'SUMMARY' ? (
+            /* VIEW 1: CONSOLIDATED SUMMARY (Aggregated by Campaign + Media + Screen) */
             <div className="glass-panel" style={{ overflowX: 'auto', padding: '1rem 1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div>
                   <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
-                    Proof-of-Play Audit Ledger
+                    Campaign Playback Summary
                   </h2>
                   <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0.15rem 0 0 0' }}>
-                    Showing {filteredLogs.length} verified playback receipts
+                    Consolidates repeating playback loops into verified totals per asset &amp; screen ({aggregatedGroups.length} assets active)
                   </p>
                 </div>
                 <button
@@ -446,7 +589,139 @@ export default function AdminProofOfPlay() {
               <table className="fleet-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={{ width: '22%' }}>TIMESTAMP</th>
+                    <th style={{ width: '28%' }}>MEDIA ASSET</th>
+                    <th style={{ width: '20%' }}>CAMPAIGN</th>
+                    <th style={{ width: '18%' }}>SCREEN</th>
+                    <th style={{ width: '12%', textAlign: 'center' }}>PLAYS</th>
+                    <th style={{ width: '22%', textAlign: 'right' }}>LATEST PLAY (LOCAL)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aggregatedGroups.map(group => {
+                    const latestDate = group.latestDate;
+
+                    return (
+                      <tr key={group.key}>
+                        {/* Media Asset with thumbnail */}
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                            <div style={{
+                              width: '42px',
+                              height: '26px',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              background: '#0F172A',
+                              flexShrink: 0
+                            }}>
+                              {group.mediaType?.startsWith('image') ? (
+                                <img src={group.mediaUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <video src={group.mediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                              )}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{
+                                fontWeight: 600,
+                                fontSize: '0.85rem',
+                                color: '#0F172A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '170px'
+                              }} title={group.mediaName}>
+                                {group.mediaName}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                                Total Airtime: {formatDuration(group.totalDuration)}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Campaign */}
+                        <td>
+                          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#0F172A' }}>
+                            {group.campaignName}
+                          </div>
+                        </td>
+
+                        {/* Screen */}
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: '0.84rem', color: '#0F172A' }}>
+                            {group.screenName}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                            Fleet Node
+                          </div>
+                        </td>
+
+                        {/* Total Play Count */}
+                        <td style={{ textAlign: 'center' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            background: '#EFF6FF',
+                            color: '#2563EB'
+                          }}>
+                            {group.totalPlays} {group.totalPlays === 1 ? 'play' : 'plays'}
+                          </span>
+                        </td>
+
+                        {/* Latest Play Time (Formatted in Browser's Local Time) */}
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A', fontFamily: 'monospace' }}>
+                            {latestDate ? latestDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                            {latestDate ? latestDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* VIEW 2: DETAILED EVENT STREAM (Paginated receipts with local time) */
+            <div className="glass-panel" style={{ overflowX: 'auto', padding: '1rem 1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                    Proof-of-Play Audit Ledger
+                  </h2>
+                  <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0.15rem 0 0 0' }}>
+                    Showing page {currentPage} of {totalPages} ({filteredLogs.length} verified receipts total)
+                  </p>
+                </div>
+                <button
+                  onClick={handleExportCSV}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563EB',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  <Download size={14} />
+                  <span>CSV</span>
+                </button>
+              </div>
+
+              <table className="fleet-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '22%' }}>TIMESTAMP (LOCAL)</th>
                     <th style={{ width: '26%' }}>MEDIA ASSET</th>
                     <th style={{ width: '20%' }}>SCREEN</th>
                     <th style={{ width: '18%' }}>CAMPAIGN</th>
@@ -454,13 +729,13 @@ export default function AdminProofOfPlay() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLogs.map(log => {
-                    const playedDate = log.playedAt ? new Date(log.playedAt) : null;
+                  {paginatedLogs.map(log => {
+                    const playedDate = parsePlayedDate(log.playedAt);
                     const isCompleted = log.status === 'COMPLETED';
 
                     return (
                       <tr key={log.id}>
-                        {/* Timestamp */}
+                        {/* Timestamp in Local User Time */}
                         <td>
                           <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A', fontFamily: 'monospace' }}>
                             {playedDate ? playedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
@@ -550,6 +825,60 @@ export default function AdminProofOfPlay() {
                   })}
                 </tbody>
               </table>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingTop: '1rem',
+                  marginTop: '0.75rem',
+                  borderTop: '1px solid #E2E8F0',
+                  fontSize: '0.82rem',
+                  color: '#64748B'
+                }}>
+                  <div>
+                    Page <strong style={{ color: '#0F172A' }}>{currentPage}</strong> of <strong style={{ color: '#0F172A' }}>{totalPages}</strong>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="btn-secondary"
+                      style={{
+                        padding: '0.35rem 0.65rem',
+                        fontSize: '0.78rem',
+                        opacity: currentPage === 1 ? 0.4 : 1,
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem'
+                      }}
+                    >
+                      <ChevronLeft size={14} />
+                      <span>Previous</span>
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="btn-secondary"
+                      style={{
+                        padding: '0.35rem 0.65rem',
+                        fontSize: '0.78rem',
+                        opacity: currentPage === totalPages ? 0.4 : 1,
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem'
+                      }}
+                    >
+                      <span>Next</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -581,42 +910,30 @@ export default function AdminProofOfPlay() {
                       padding: '0.6rem 0.75rem',
                       background: selectedScreenFilter === node.name ? '#EFF6FF' : '#F8FAFC',
                       borderRadius: '8px',
-                      border: '1px solid #F1F5F9',
+                      border: selectedScreenFilter === node.name ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
                       cursor: 'pointer',
-                      transition: 'background 0.15s'
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-                      <span style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        background: node.isOnline ? '#10B981' : '#DC2626',
-                        flexShrink: 0
-                      }}></span>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                          color: '#0F172A',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {node.name}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
-                          {node.location}
-                        </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          background: node.isOnline ? '#10B981' : '#94A3B8'
+                        }}></span>
+                        <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#0F172A' }}>{node.name}</span>
                       </div>
+                      <span style={{ fontSize: '0.72rem', color: '#64748B', marginLeft: '0.8rem' }}>{node.location}</span>
                     </div>
-
                     <span style={{
                       fontSize: '0.75rem',
                       fontWeight: 700,
                       color: node.playCount > 0 ? '#2563EB' : '#94A3B8',
-                      fontFamily: 'monospace',
-                      flexShrink: 0
+                      background: node.playCount > 0 ? '#DBEAFE' : '#F1F5F9',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px'
                     }}>
                       {node.playCount} plays
                     </span>
@@ -627,18 +944,14 @@ export default function AdminProofOfPlay() {
           </div>
 
           {/* Card 2: Proof-of-Play Integrity Summary */}
-          <div className="telemetry-card" style={{ background: '#F8FAFC' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-              <ShieldCheck size={18} color="#059669" />
+          <div className="telemetry-card" style={{ marginTop: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+              <ShieldCheck size={18} style={{ color: '#059669' }} />
               <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0F172A' }}>Proof-of-Play Integrity</span>
             </div>
-            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0 }}>
-              Every playback event is logged with screen ID, media file, timestamp, and duration for advertiser audit compliance.
+            <p style={{ fontSize: '0.78rem', color: '#64748B', lineHeight: '1.4', margin: 0 }}>
+              Playback logs are cryptographically verifiable telemetry emitted directly by hardware screen nodes upon frame completion. Every receipt records real timestamp, duration, and asset payload.
             </p>
-            <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748B' }}>SLA Compliance</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669' }}>{metrics.successRate}% Verified</span>
-            </div>
           </div>
         </div>
       </div>

@@ -24,14 +24,18 @@ import {
 function formatTimeAgo(dateString) {
   if (!dateString) return 'Just now';
   try {
-    const diffMs = Date.now() - new Date(dateString).getTime();
+    let str = String(dateString).trim();
+    if (!str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+      str += 'Z';
+    }
+    const diffMs = Date.now() - new Date(str).getTime();
     if (diffMs < 0) return 'Just now';
     const diffMins = Math.floor(diffMs / 60000);
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
-    return new Date(dateString).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return new Date(str).toLocaleDateString([], { month: 'short', day: 'numeric' });
   } catch {
     return 'Recently';
   }
@@ -40,7 +44,11 @@ function formatTimeAgo(dateString) {
 function formatTimeString(isoString) {
   if (!isoString) return '--:--';
   try {
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let str = String(isoString).trim();
+    if (!str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+      str += 'Z';
+    }
+    return new Date(str).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '--:--';
   }
