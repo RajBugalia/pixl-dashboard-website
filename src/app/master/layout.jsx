@@ -1,4 +1,5 @@
 import Navbar from '@/components/Navbar';
+import AuthGuard from '@/components/AuthGuard';
 
 const masterLinks = [
   { href: '/master/dashboard', label: 'Dashboard' },
@@ -10,11 +11,13 @@ const masterLinks = [
 
 export default function MasterLayout({ children }) {
   return (
-    <div className="dashboard-layout">
-      <Navbar role="master" links={masterLinks} />
-      <main className="main-content">
-        {children}
-      </main>
-    </div>
+    <AuthGuard allowedRole="ROLE_MASTER" fallbackRoute="/admin/dashboard">
+      <div className="dashboard-layout">
+        <Navbar role="master" links={masterLinks} />
+        <main className="main-content">
+          {children}
+        </main>
+      </div>
+    </AuthGuard>
   );
 }

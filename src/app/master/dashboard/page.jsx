@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import client from '@/api/client';
+import MetricCard from '@/components/MetricCard';
+import PageHeader from '@/components/PageHeader';
 
 export default function MasterDashboard() {
   const [stats, setStats] = useState(null);
@@ -111,166 +113,94 @@ export default function MasterDashboard() {
   return (
     <>
       {/* 1. Header & Operational Matrix Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} aria-hidden="true"></span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
-              HQ Master Control Matrix • Multi-Tenant Enterprise
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h1 className="page-title" style={{ margin: 0 }}>Master Dashboard</h1>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DCFCE7',
-              color: '#15803D',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.activeScreens}/{metrics.totalScreens} Displays Online ({metrics.onlineRate}%)
-            </span>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DBEAFE',
-              color: '#1D4ED8',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.totalAdmins} Tenant Admins
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.35rem' }}>
-            Network-wide multi-tenant fleet overview, display pairing orchestrations, and centralized proof-of-play auditing.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="HQ Master Control Matrix • Multi-Tenant Enterprise"
+        title="Master Dashboard"
+        badges={[
+          {
+            label: `${metrics.activeScreens}/${metrics.totalScreens} Displays Online (${metrics.onlineRate}%)`,
+            bg: '#DCFCE7',
+            color: '#15803D',
+            dotColor: '#16A34A'
+          },
+          {
+            label: `${metrics.totalAdmins} Tenant Admins`,
+            bg: '#DBEAFE',
+            color: '#1D4ED8'
+          }
+        ]}
+        description="Network-wide multi-tenant fleet overview, display pairing orchestrations, and centralized proof-of-play auditing."
+        actions={
+          <>
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="master-btn-secondary"
+              title="Reload Network Telemetry"
+              aria-label="Reload network telemetry"
+            >
+              <RotateCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
+            </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            className="btn-secondary"
-            title="Reload Network Telemetry"
-            style={{
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.88rem',
-              background: '#ffffff',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              cursor: refreshing ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <RotateCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
-          </button>
-
-          <Link
-            href="/master/pair"
-            className="btn-primary"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.55rem 1.25rem',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              textDecoration: 'none'
-            }}
-          >
-            <Plus size={18} />
-            <span>Pair New Screen</span>
-          </Link>
-        </div>
-      </div>
+            <Link
+              href="/master/pair"
+              className="master-btn-primary"
+            >
+              <Plus size={16} />
+              <span>Pair New Screen</span>
+            </Link>
+          </>
+        }
+      />
 
       {/* 2. Top Metrics Ribbon (4 Cards) */}
-      <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Network Displays */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Network Displays
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB' }}>
-              <Tv size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalScreens}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span style={{ color: '#15803D', fontWeight: 600 }}>{metrics.activeScreens} Online</span>
-            <span>•</span>
-            <span style={{ color: metrics.offlineScreens > 0 ? '#DC2626' : 'var(--text-secondary)' }}>
-              {metrics.offlineScreens} Offline
-            </span>
-          </div>
-        </div>
+      <div className="master-stat-grid">
+        <MetricCard
+          label="Network Displays"
+          icon={Tv}
+          iconBg="#EFF6FF"
+          iconColor="#2563EB"
+          value={metrics.totalScreens}
+          status={{ online: metrics.activeScreens, offline: metrics.offlineScreens }}
+        />
 
-        {/* Card 2: Tenant Admins */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Tenant Admins
+        <MetricCard
+          label="Tenant Admins"
+          icon={Users}
+          iconBg="#ECFDF5"
+          iconColor="#059669"
+          value={metrics.totalAdmins}
+          subtext={
+            <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>
+              <strong style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{metrics.assignedScreens}</strong>{' '}
+              {metrics.assignedScreens === 1 ? 'screen' : 'screens'} assigned to tenants
             </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#ECFDF5', color: '#059669' }}>
-              <Users size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalAdmins}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <strong style={{ color: 'var(--text-primary)' }}>{metrics.assignedScreens}</strong> screens assigned to tenants
-          </div>
-        </div>
+          }
+        />
 
-        {/* Card 3: Broadcast Campaigns */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Active Campaigns
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#FEF3C7', color: '#D97706' }}>
-              <Film size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalCampaigns}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Orchestrated across tenant displays
-          </div>
-        </div>
+        <MetricCard
+          label="Active Campaigns"
+          icon={Film}
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          value={metrics.totalCampaigns}
+          description="Orchestrated across tenant displays"
+        />
 
-        {/* Card 4: Proof of Play Receipts */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Playback Receipts
+        <MetricCard
+          label="Playback Receipts"
+          icon={ShieldCheck}
+          iconBg="#F3E8FF"
+          iconColor="#7E22CE"
+          value={metrics.totalReceipts}
+          subtext={
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <strong style={{ color: '#15803D', fontWeight: 700 }}>{metrics.successRate}%</strong>{' '}
+              <span style={{ color: 'var(--text-secondary)' }}>Delivery Success Rate</span>
             </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#F3E8FF', color: '#7E22CE' }}>
-              <ShieldCheck size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalReceipts}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span style={{ color: '#15803D', fontWeight: 600 }}>{metrics.successRate}%</span> Delivery Success Rate
-          </div>
-        </div>
+          }
+        />
       </div>
 
       {/* 3. Fleet Health Telemetry & Status Donut Card */}
@@ -292,10 +222,10 @@ export default function MasterDashboard() {
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'center' }}>
-          {/* Donut Chart */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
-            <div style={{ position: 'relative', width: 140, height: 140 }}>
+        <div className="master-telemetry-health-grid">
+          {/* Donut Chart & Legend */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.75rem', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', width: 140, height: 140, flexShrink: 0 }}>
               <svg width="140" height="140" viewBox="0 0 160 160" style={{ transform: 'rotate(-90deg)' }}>
                 {/* Background Track */}
                 <circle cx="80" cy="80" r={radius} fill="transparent" stroke="#F1F5F9" strokeWidth="14" />
@@ -320,23 +250,23 @@ export default function MasterDashboard() {
                 )}
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+                <span style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
                   {metrics.totalScreens > 0 ? `${metrics.onlineRate}%` : '0%'}
                 </span>
-                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em', marginTop: '0.2rem' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em', marginTop: '0.2rem' }}>
                   ONLINE
                 </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: '130px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }}></span>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981', flexShrink: 0 }} aria-hidden="true"></span>
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{metrics.activeScreens} Online</span>
                 <span style={{ color: 'var(--text-secondary)' }}>({metrics.onlineRate}%)</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }}></span>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} aria-hidden="true"></span>
                 <span style={{ fontWeight: 600, color: metrics.offlineScreens > 0 ? '#DC2626' : 'var(--text-primary)' }}>
                   {metrics.offlineScreens} Offline
                 </span>
@@ -345,38 +275,38 @@ export default function MasterDashboard() {
             </div>
           </div>
 
-          {/* Telemetry Summary Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <CheckCircle2 size={18} color="#059669" />
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#065F46' }}>
+          {/* Telemetry Status Cards (Strictly Equal Sizing) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ padding: '0.85rem 1rem', borderRadius: '10px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '62px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                <CheckCircle2 size={20} color="#059669" style={{ flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#065F46', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {metrics.activeScreens} Hardware Displays Online
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#047857' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#047857', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     Broadcasting active campaign and standby loops
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.55rem', borderRadius: '6px', flexShrink: 0, marginLeft: '0.5rem' }}>
                 PASS
               </span>
             </div>
 
-            <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: metrics.offlineScreens > 0 ? '#FEF2F2' : '#F8FAFC', border: metrics.offlineScreens > 0 ? '1px solid #FECACA' : '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                {metrics.offlineScreens > 0 ? <AlertTriangle size={18} color="#DC2626" /> : <Monitor size={18} color="#64748B" />}
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: metrics.offlineScreens > 0 ? '#991B1B' : '#334155' }}>
+            <div style={{ padding: '0.85rem 1rem', borderRadius: '10px', background: metrics.offlineScreens > 0 ? '#FEF2F2' : '#F8FAFC', border: metrics.offlineScreens > 0 ? '1px solid #FECACA' : '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '62px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                {metrics.offlineScreens > 0 ? <AlertTriangle size={20} color="#DC2626" style={{ flexShrink: 0 }} /> : <Monitor size={20} color="#64748B" style={{ flexShrink: 0 }} />}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: metrics.offlineScreens > 0 ? '#991B1B' : '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {metrics.offlineScreens} Unreachable Nodes
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: metrics.offlineScreens > 0 ? '#B91C1C' : '#64748B' }}>
+                  <div style={{ fontSize: '0.75rem', color: metrics.offlineScreens > 0 ? '#B91C1C' : '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {metrics.offlineScreens > 0 ? 'Check device power and network connections' : 'All display gateways responding normally'}
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: metrics.offlineScreens > 0 ? '#FEE2E2' : '#F1F5F9', color: metrics.offlineScreens > 0 ? '#DC2626' : '#64748B', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: metrics.offlineScreens > 0 ? '#FEE2E2' : '#F1F5F9', color: metrics.offlineScreens > 0 ? '#DC2626' : '#64748B', padding: '0.2rem 0.55rem', borderRadius: '6px', flexShrink: 0, marginLeft: '0.5rem' }}>
                 {metrics.offlineScreens > 0 ? 'ATTN' : 'OK'}
               </span>
             </div>
@@ -385,10 +315,9 @@ export default function MasterDashboard() {
       </div>
 
       {/* 4. Two-Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
-        
-        {/* Left Section (8 cols): Fleet Display Nodes & Admins Directory */}
-        <div style={{ gridColumn: 'span 12', lg: 'span 8', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div className="master-two-col">
+        {/* Left Section: Fleet Display Nodes & Admins Directory */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
           
           {/* Managed Fleet Screens Table */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
@@ -545,8 +474,8 @@ export default function MasterDashboard() {
           </div>
         </div>
 
-        {/* Right Section (4 cols): Proof-of-Play Audit & Quick Navigation */}
-        <aside style={{ gridColumn: 'span 12', lg: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* Right Section: Proof-of-Play Audit & Quick Navigation */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
           
           {/* Quick Action Shortcuts */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>

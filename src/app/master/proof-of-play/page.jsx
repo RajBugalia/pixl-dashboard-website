@@ -15,6 +15,8 @@ import {
   X
 } from 'lucide-react';
 import client from '@/api/client';
+import MetricCard from '@/components/MetricCard';
+import PageHeader from '@/components/PageHeader';
 
 export default function MasterProofOfPlay() {
   const [logs, setLogs] = useState([]);
@@ -250,123 +252,74 @@ export default function MasterProofOfPlay() {
   return (
     <>
       {/* 1. Header Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h1 className="page-title" style={{ margin: 0 }}>Proof of Play Analytics</h1>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DCFCE7',
-              color: '#15803D',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A' }}></span>
-              {metrics.total} Verified Receipts
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Multi-tenant hardware audit ledger verifying real-time playback, broadcast durations, and campaign impressions.
-          </p>
-        </div>
-
-        <button
-          onClick={handleExportCSV}
-          disabled={logs.length === 0}
-          className="btn-primary"
-          style={{
-            width: 'auto',
-            padding: '0.5rem 1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            fontSize: '0.88rem',
-            opacity: logs.length === 0 ? 0.6 : 1,
-            cursor: logs.length === 0 ? 'not-allowed' : 'pointer'
-          }}
-        >
-          <Download size={16} />
-          <span>Export Master Audit (CSV)</span>
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Hardware Audit Ledger • Real-Time Playback Proof"
+        title="Proof of Play Analytics"
+        badges={[
+          {
+            label: `${metrics.total} Verified Receipts`,
+            bg: '#DCFCE7',
+            color: '#15803D',
+            dotColor: '#16A34A'
+          }
+        ]}
+        description="Multi-tenant hardware audit ledger verifying real-time playback, broadcast durations, and campaign impressions."
+        actions={
+          <button
+            onClick={handleExportCSV}
+            disabled={logs.length === 0}
+            className="master-btn-primary"
+            title="Export CSV"
+            aria-label="Export master audit CSV"
+          >
+            <Download size={16} />
+            <span>Export Master Audit (CSV)</span>
+          </button>
+        }
+      />
 
       {/* 2. Top Metric Cards */}
-      <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Total Verified Plays */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Playback Receipts
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#DBEAFE', color: '#1D4ED8' }}>
-              <Film size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.total}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Cryptographically audited impressions
-          </div>
-        </div>
+      <div className="master-stat-grid">
+        <MetricCard
+          label="Playback Receipts"
+          icon={Film}
+          iconBg="#DBEAFE"
+          iconColor="#1D4ED8"
+          value={metrics.total}
+          description="Cryptographically audited impressions"
+        />
 
-        {/* Card 2: Playback Delivery SLA */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Playback SLA Met
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#DCFCE7', color: '#15803D' }}>
-              <CheckCircle2 size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>
-            {metrics.successRate}%
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Hardware execution confirmation rate
-          </div>
-        </div>
+        <MetricCard
+          label="Playback SLA Met"
+          icon={CheckCircle2}
+          iconBg="#DCFCE7"
+          iconColor="#15803D"
+          value={`${metrics.successRate}%`}
+          valueColor="#15803D"
+          description="Hardware execution confirmation rate"
+        />
 
-        {/* Card 3: Displays Logged */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Displays Logged
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#FEF3C7', color: '#D97706' }}>
-              <Tv size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.uniqueLoggedScreensCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Unique physical screens transmitting logs
-          </div>
-        </div>
+        <MetricCard
+          label="Displays Logged"
+          icon={Tv}
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          value={metrics.uniqueLoggedScreensCount}
+          description="Unique physical screens transmitting logs"
+        />
 
-        {/* Card 4: Total Airtime */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Total Airtime Logged
+        <MetricCard
+          label="Total Airtime Logged"
+          icon={Clock}
+          iconBg="#F3E8FF"
+          iconColor="#7E22CE"
+          value={metrics.totalHours > 0 ? `${metrics.totalHours}h` : `${metrics.totalMinutes}m`}
+          subtext={
+            <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Across <strong style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{metrics.uniqueLoggedAdminsCount}</strong> tenant {metrics.uniqueLoggedAdminsCount === 1 ? 'account' : 'accounts'}
             </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#F3E8FF', color: '#7E22CE' }}>
-              <Clock size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalHours > 0 ? `${metrics.totalHours}h` : `${metrics.totalMinutes}m`}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Across <strong style={{ color: 'var(--text-primary)' }}>{metrics.uniqueLoggedAdminsCount}</strong> tenant accounts
-          </div>
-        </div>
+          }
+        />
       </div>
 
       {/* 3. Search & Filter Controls Ribbon */}

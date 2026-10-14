@@ -15,11 +15,14 @@ import {
   LayoutList,
   MoreVertical,
   X,
-  ArrowUpRight
+  ArrowUpRight,
+  ShieldCheck
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Link from 'next/link';
 import client from '@/api/client';
+import MetricCard from '@/components/MetricCard';
+import PageHeader from '@/components/PageHeader';
 
 export default function MasterScreens() {
   const [screens, setScreens] = useState([]);
@@ -190,166 +193,88 @@ export default function MasterScreens() {
   return (
     <>
       {/* 1. Header & Command Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              HQ MULTI-TENANT FLEET • HARDWARE DISPLAY MESH
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h1 className="page-title" style={{ margin: 0 }}>Manage Screens</h1>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DCFCE7',
-              color: '#15803D',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.online}/{metrics.total} Displays Online ({metrics.onlineRate}%)
-            </span>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DBEAFE',
-              color: '#1D4ED8',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.assigned} Assigned to Tenants
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.35rem' }}>
-            Centralized registry of all paired Android TV hardware displays, pairing codes, and regional tenant assignments.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="HQ Multi-Tenant Fleet • Hardware Display Mesh"
+        title="Manage Screens"
+        badges={[
+          {
+            label: `${metrics.online}/${metrics.total} Displays Online (${metrics.onlineRate}%)`,
+            bg: '#DCFCE7',
+            color: '#15803D',
+            dotColor: '#16A34A'
+          },
+          {
+            label: `${metrics.assigned} Assigned to Tenants`,
+            bg: '#DBEAFE',
+            color: '#1D4ED8'
+          }
+        ]}
+        description="Centralized registry of all paired Android TV hardware displays, pairing codes, and regional tenant assignments."
+        actions={
+          <>
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+              className="master-btn-secondary"
+              title="Reload Display Telemetry"
+              aria-label="Reload display telemetry"
+            >
+              <RotateCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
+            </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => loadData(true)}
-            disabled={refreshing}
-            className="btn-secondary"
-            title="Reload Display Telemetry"
-            style={{
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.88rem',
-              background: '#ffffff',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              cursor: refreshing ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <RotateCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
-          </button>
+            <Link
+              href="/master/pair"
+              className="master-btn-primary"
+            >
+              <Plus size={16} />
+              <span>Pair New Screen</span>
+            </Link>
+          </>
+        }
+      />
 
-          <Link
-            href="/master/pair"
-            className="btn-primary"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.55rem 1.25rem',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              textDecoration: 'none'
-            }}
-          >
-            <Plus size={18} />
-            <span>Pair New Screen</span>
-          </Link>
-        </div>
-      </div>
+      {/* 2. Top Metric Telemetry Cards */}
+      <div className="master-stat-grid">
+        <MetricCard
+          label="Network Displays"
+          icon={Tv}
+          iconBg="#EFF6FF"
+          iconColor="#2563EB"
+          value={metrics.total}
+          status={{ online: metrics.online, offline: metrics.offline }}
+        />
 
-      {/* 2. Top Metric Telemetry Cards (Real Data Only — Zero Hardware Telemetry) */}
-      <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Network Displays */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Network Displays
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB' }}>
-              <Tv size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.total}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span style={{ color: '#15803D', fontWeight: 600 }}>{metrics.online} Online</span>
-            <span>•</span>
-            <span style={{ color: metrics.offline > 0 ? '#DC2626' : 'var(--text-secondary)' }}>
-              {metrics.offline} Offline
-            </span>
-          </div>
-        </div>
+        <MetricCard
+          label="Managing Tenants"
+          icon={Users}
+          iconBg="#ECFDF5"
+          iconColor="#059669"
+          value={metrics.uniqueAssignedAdminsCount}
+          description="Active regional tenant admins"
+        />
 
-        {/* Card 2: Tenant Admins */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Managing Tenants
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#ECFDF5', color: '#059669' }}>
-              <Users size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.uniqueAssignedAdminsCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Active regional tenants managing displays
-          </div>
-        </div>
+        <MetricCard
+          label="Display Groups"
+          icon={Layers}
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          value={metrics.groupsCount}
+          description="Configured geographic sync clusters"
+        />
 
-        {/* Card 3: Display Groups */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Display Groups
+        <MetricCard
+          label="Fleet Health"
+          icon={ShieldCheck}
+          iconBg="#F3E8FF"
+          iconColor="#7E22CE"
+          value={`${metrics.onlineRate}%`}
+          subtext={
+            <span style={{ fontWeight: 600 }}>
+              <span style={{ color: '#15803D' }}>{metrics.online} of {metrics.total}</span> online
             </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#FEF3C7', color: '#D97706' }}>
-              <Layers size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.groupsCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Configured regional synchronization clusters
-          </div>
-        </div>
-
-        {/* Card 4: Unassigned Pool */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Unassigned Pool
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#F3E8FF', color: '#7E22CE' }}>
-              <Monitor size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.unassigned}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Screens available to reassign or pair
-          </div>
-        </div>
+          }
+        />
       </div>
 
       {/* 3. Search & Filter Controls Ribbon */}
@@ -636,36 +561,27 @@ export default function MasterScreens() {
                         <Link
                           href={`/master/pair?code=${encodeURIComponent(screen.pairingCode || '')}&screenName=${encodeURIComponent(screen.name || '')}`}
                           title="Re-pair or Assign"
+                          className="master-table-action-btn"
                           style={{
-                            padding: '0.35rem 0.55rem',
-                            borderRadius: '6px',
-                            background: '#F8FAFC',
-                            border: '1px solid #E2E8F0',
-                            color: 'var(--accent-color)',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.2rem'
+                            background: '#EFF6FF',
+                            border: '1px solid #DBEAFE',
+                            color: 'var(--accent-color)'
                           }}
                         >
-                          Pair <ArrowUpRight size={12} />
+                          <span>Pair</span>
+                          <ArrowUpRight size={13} />
                         </Link>
 
                         <button
                           onClick={() => handleDeleteClick(screen)}
+                          className="master-table-icon-btn"
                           style={{
-                            padding: '0.35rem 0.5rem',
-                            borderRadius: '6px',
                             background: '#FFF1F2',
                             border: '1px solid #FFE4E6',
-                            color: '#E11D48',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center'
+                            color: '#E11D48'
                           }}
                           title="Delete Screen"
+                          aria-label={`Delete screen ${screen.name}`}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -770,36 +686,32 @@ export default function MasterScreens() {
                 </div>
 
                 {/* Card Footer */}
-                <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
                   <Link
                     href={`/master/pair?code=${encodeURIComponent(screen.pairingCode || '')}&screenName=${encodeURIComponent(screen.name || '')}`}
+                    className="master-table-action-btn"
                     style={{
-                      fontSize: '0.78rem',
-                      fontWeight: 600,
-                      color: 'var(--accent-color)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.2rem',
-                      textDecoration: 'none'
+                      background: '#EFF6FF',
+                      border: '1px solid #DBEAFE',
+                      color: 'var(--accent-color)'
                     }}
                   >
-                    Pair / Assign <ArrowUpRight size={13} />
+                    <span>Pair / Assign</span>
+                    <ArrowUpRight size={13} />
                   </Link>
 
                   <button
                     onClick={() => handleDeleteClick(screen)}
+                    className="master-table-icon-btn"
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#EF4444',
-                      cursor: 'pointer',
-                      padding: '0.2rem',
-                      display: 'flex',
-                      alignItems: 'center'
+                      background: '#FFF1F2',
+                      border: '1px solid #FFE4E6',
+                      color: '#E11D48'
                     }}
                     title="Delete Screen"
+                    aria-label={`Delete screen ${screen.name}`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

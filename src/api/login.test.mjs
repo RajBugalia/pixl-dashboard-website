@@ -18,16 +18,21 @@ test('admin login preserves profile name and password, trims email, and bounds r
   assert.equal(await signIn(f), '/admin/dashboard');
   assert.equal(JSON.parse(f.saved.get('user')).name, 'Admin');
   assert.equal(f.saved.get('token'), user.token);
-  assert.deepEqual(f.requests[0], ['/auth/signin', { email: user.email, passwordHash: f.password }, { timeout: 15000 }]);
+  assert.deepEqual(f.requests[0], ['/auth/signin', { email: user.email, passwordHash: f.password, scope: 'ADMIN' }, { timeout: 15000 }]);
 });
-test('master can enter both panels', async () => {
-  for (const panel of ['master', 'admin']) {
-    assert.equal(await signIn({ ...fixture({ ...user, role: 'ROLE_MASTER' }), panel }), `/${panel}/dashboard`);
-  }
+test('master can enter master panel', async () => {
+  const f = { ...fixture({ ...user, role: 'ROLE_MASTER' }), panel: 'master' };
+  assert.equal(await signIn(f), '/master/dashboard');
+  assert.equal(f.saved.get('token'), user.token);
+});
+test('master cannot enter admin panel or save a session', async () => {
+  const f = { ...fixture({ ...user, role: 'ROLE_MASTER' }), panel: 'admin' };
+  await assert.rejects(signIn(f), /Access denied.*Master Administrator credentials cannot access Tenant Admin portal/);
+  assert.equal(f.saved.size, 0);
 });
 test('admin cannot enter master panel or save a session', async () => {
   const f = fixture();
-  await assert.rejects(signIn({ ...f, panel: 'master' }), /Access denied/);
+  await assert.rejects(signIn({ ...f, panel: 'master' }), /Access denied.*Master Panel privileges/);
   assert.equal(f.saved.size, 0);
 });
 test('incomplete responses cannot create sessions', async () => {
@@ -52,6 +57,7 @@ test('rejected credentials do not create a session', async () => {
 test('timeout, network, server and credential errors have distinct messages', () => {
   assert.match(loginErrorMessage({ code: 'ECONNABORTED' }), /too long/);
   assert.match(loginErrorMessage({ isAxiosError: true }), /Cannot connect/);
+  assert.match(loginErrorMessage({ response: { status: 403, data: { message: 'Access denied: Master forbidden' } } }), /Access denied: Master forbidden/);
   assert.match(loginErrorMessage({ response: { status: 500, data: { message: 'internal details' } } }), /try again later/);
   assert.match(loginErrorMessage({ response: { status: 401 } }), /Invalid email or password/);
 });

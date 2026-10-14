@@ -37,12 +37,26 @@ export default function Navbar({ role, links }) {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
+    const token = localStorage.getItem('token');
+    if (!storedUser || !token) {
       router.push('/login');
-    } else {
-      setUser(JSON.parse(storedUser));
+      return;
     }
-  }, [router]);
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      if (role === 'admin' && parsedUser.role !== 'ROLE_ADMIN') {
+        router.replace('/master/dashboard');
+        return;
+      }
+      if (role === 'master' && parsedUser.role !== 'ROLE_MASTER') {
+        router.replace('/admin/dashboard');
+        return;
+      }
+      setUser(parsedUser);
+    } catch {
+      router.push('/login');
+    }
+  }, [router, role]);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -98,6 +112,7 @@ export default function Navbar({ role, links }) {
             <button 
               className="icon-button" 
               title="Notifications" 
+              aria-label="Notifications"
               onClick={(e) => { e.stopPropagation(); setShowNotifications(!showNotifications); setShowDropdown(false); }}
             >
               <Bell size={20} />
@@ -134,6 +149,8 @@ export default function Navbar({ role, links }) {
           <div className="profile-menu-container">
             <button 
               className="profile-button" 
+              aria-label="User Profile Menu"
+              aria-expanded={showDropdown}
               onClick={(e) => { e.stopPropagation(); setShowDropdown(!showDropdown); setShowNotifications(false); }}
             >
               <div className="avatar">

@@ -28,6 +28,7 @@ import {
 import Swal from 'sweetalert2';
 import Link from 'next/link';
 import client from '@/api/client';
+import MetricCard from '@/components/MetricCard';
 
 export default function AdminPlaylists() {
   const [playlists, setPlaylists] = useState([]);
@@ -456,83 +457,55 @@ export default function AdminPlaylists() {
         </div>
       </div>
 
-      {/* 2. Four Dynamic Metric Cards (Real Data Only - NO temp, storage, ram) */}
-      <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Total Sequences */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Total Sequences
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB' }}>
-              <ListMusic size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalPlaylists}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span style={{ color: '#15803D', fontWeight: 600 }}>{metrics.populated} With Media</span>
-            <span>•</span>
-            <span>{metrics.empty} Empty Loops</span>
-          </div>
-        </div>
+      {/* 2. Four Dynamic Metric Cards */}
+      <div className="master-stat-grid">
+        <MetricCard
+          label="Total Sequences"
+          icon={ListMusic}
+          iconBg="#EFF6FF"
+          iconColor="#2563EB"
+          value={metrics.totalPlaylists}
+          status={
+            <div className="metric-status-row">
+              <span className="metric-status-pill online">
+                <span className="metric-dot online" aria-hidden="true" />
+                {metrics.populated} With Media
+              </span>
+              <span className="metric-status-sep" aria-hidden="true">•</span>
+              <span className="metric-status-pill neutral">
+                <span className="metric-dot neutral" aria-hidden="true" />
+                {metrics.empty} Empty Loops
+              </span>
+            </div>
+          }
+        />
 
-        {/* Card 2: Sequenced Media Assets */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Sequenced Media
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#ECFDF5', color: '#059669' }}>
-              <Layers size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalSequencedMedia}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Average <strong style={{ color: 'var(--text-primary)' }}>{metrics.avgMediaPerPlaylist}</strong> assets per playlist
-          </div>
-        </div>
+        <MetricCard
+          label="Sequenced Media"
+          icon={Layers}
+          iconBg="#ECFDF5"
+          iconColor="#059669"
+          value={metrics.totalSequencedMedia}
+          description={`Average ${metrics.avgMediaPerPlaylist} assets per playlist`}
+        />
 
-        {/* Card 3: Broadcast Deployments */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Live Deployments
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#FEF3C7', color: '#D97706' }}>
-              <Tv size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.activeCampaignsCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Broadcasting on <strong style={{ color: 'var(--text-primary)' }}>{metrics.assignedScreensCount}</strong> physical displays
-          </div>
-        </div>
+        <MetricCard
+          label="Live Deployments"
+          icon={Tv}
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          value={metrics.activeCampaignsCount}
+          description={`Broadcasting on ${metrics.assignedScreensCount} physical displays`}
+        />
 
-        {/* Card 4: Library Media Assets */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Library Assets Ready
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#F3E8FF', color: '#7E22CE' }}>
-              <Film size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.totalLibraryAssets}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span>{metrics.videoCount} Videos</span>
-            <span>•</span>
-            <span>{metrics.imageCount} Images</span>
-          </div>
-        </div>
+        <MetricCard
+          label="Library Assets Ready"
+          icon={Film}
+          iconBg="#F3E8FF"
+          iconColor="#7E22CE"
+          value={metrics.totalLibraryAssets}
+          description={`${metrics.videoCount} Videos • ${metrics.imageCount} Images`}
+        />
       </div>
 
       {/* 3. Filter, Search & View Controls Ribbon */}

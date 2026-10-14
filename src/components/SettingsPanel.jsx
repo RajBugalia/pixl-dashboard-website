@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import client from '@/api/client';
+import MetricCard from '@/components/MetricCard';
 
 export default function SettingsPanel() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -217,79 +218,44 @@ export default function SettingsPanel() {
         </button>
       </div>
 
-      {/* 2. Top Metric Telemetry Cards (Real Data Only — Zero Hardware Telemetry) */}
-      <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Identity */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Active Identity
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB' }}>
-              <User size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user.name || 'Signage Operator'}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user.email}
-          </div>
-        </div>
+      {/* 2. Top Metric Telemetry Cards */}
+      <div className="master-stat-grid">
+        <MetricCard
+          label="Active Identity"
+          icon={User}
+          iconBg="#EFF6FF"
+          iconColor="#2563EB"
+          value={user.name || 'Signage Operator'}
+          description={user.email}
+        />
 
-        {/* Card 2: Security Health */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Security Status
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#ECFDF5', color: '#059669' }}>
-              <ShieldCheck size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#059669' }}>
-            JWT Protected
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            Cryptographic authentication enabled
-          </div>
-        </div>
+        <MetricCard
+          label="Security Status"
+          icon={ShieldCheck}
+          iconBg="#ECFDF5"
+          iconColor="#059669"
+          value="JWT Protected"
+          valueColor="#059669"
+          description="Cryptographic authentication enabled"
+        />
 
-        {/* Card 3: Alert Channels */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Dispatch Alerts
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#FEF3C7', color: '#D97706' }}>
-              <Bell size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {user.notifyAlerts ? 'Active' : 'Muted'}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            {user.notifyReports ? 'Weekly reports subscribed' : 'Standard event notifications'}
-          </div>
-        </div>
+        <MetricCard
+          label="Dispatch Alerts"
+          icon={Bell}
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          value={user.notifyAlerts ? 'Active' : 'Muted'}
+          description={user.notifyReports ? 'Weekly reports subscribed' : 'Standard event notifications'}
+        />
 
-        {/* Card 4: Region & Timezone */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Display Timezone
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#F3E8FF', color: '#7E22CE' }}>
-              <Globe size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-            {user.timezone || 'UTC'}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            Playback schedule alignment
-          </div>
-        </div>
+        <MetricCard
+          label="Display Timezone"
+          icon={Globe}
+          iconBg="#F3E8FF"
+          iconColor="#7E22CE"
+          value={user.timezone || 'UTC'}
+          description="Playback schedule alignment"
+        />
       </div>
 
       {/* 3. Settings Navigation Tabs & Form Area */}

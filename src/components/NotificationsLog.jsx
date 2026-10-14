@@ -19,6 +19,7 @@ import {
 import Swal from 'sweetalert2';
 import { useRouter } from 'next/navigation';
 import client from '@/api/client';
+import MetricCard from '@/components/MetricCard';
 
 export default function NotificationsLog() {
   const [notifications, setNotifications] = useState([]);
@@ -258,83 +259,56 @@ export default function NotificationsLog() {
         </div>
       </div>
 
-      {/* 2. Top Metric Telemetry Cards (Real Data Only — Zero Hardware Telemetry) */}
-      <div className="screens-stat-grid" style={{ marginBottom: '1.5rem' }}>
-        {/* Card 1: Total Notifications */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Total Logs
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#EFF6FF', color: '#2563EB' }}>
-              <Bell size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.total}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <span style={{ color: metrics.unreadCount > 0 ? '#DC2626' : '#15803D', fontWeight: 600 }}>
-              {metrics.unreadCount} Unread
-            </span>
-            <span>•</span>
-            <span>{metrics.total - metrics.unreadCount} Read</span>
-          </div>
-        </div>
+      {/* 2. Top Metric Telemetry Cards */}
+      <div className="master-stat-grid">
+        <MetricCard
+          label="Total Logs"
+          icon={Bell}
+          iconBg="#EFF6FF"
+          iconColor="#2563EB"
+          value={metrics.total}
+          status={
+            <div className="metric-status-row">
+              <span className={`metric-status-pill ${metrics.unreadCount > 0 ? 'offline' : 'online'}`}>
+                <span className={`metric-dot ${metrics.unreadCount > 0 ? 'offline' : 'online'}`} aria-hidden="true" />
+                {metrics.unreadCount} Unread
+              </span>
+              <span className="metric-status-sep" aria-hidden="true">•</span>
+              <span className="metric-status-pill neutral">
+                <span className="metric-dot neutral" aria-hidden="true" />
+                {metrics.total - metrics.unreadCount} Read
+              </span>
+            </div>
+          }
+        />
 
-        {/* Card 2: Unread Alerts */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Unread Action Items
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: metrics.unreadCount > 0 ? '#FEE2E2' : '#ECFDF5', color: metrics.unreadCount > 0 ? '#DC2626' : '#059669' }}>
-              <Clock size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: metrics.unreadCount > 0 ? '#DC2626' : '#059669', lineHeight: 1.1 }}>
-            {metrics.unreadCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            {metrics.unreadCount > 0 ? 'Pending operator review' : 'Zero outstanding alerts'}
-          </div>
-        </div>
+        <MetricCard
+          label="Unread Action Items"
+          icon={Clock}
+          iconBg={metrics.unreadCount > 0 ? '#FEE2E2' : '#ECFDF5'}
+          iconColor={metrics.unreadCount > 0 ? '#DC2626' : '#059669'}
+          value={metrics.unreadCount}
+          valueColor={metrics.unreadCount > 0 ? '#DC2626' : '#059669'}
+          description={metrics.unreadCount > 0 ? 'Pending operator review' : 'Zero outstanding alerts'}
+        />
 
-        {/* Card 3: Warnings & Alerts */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Warnings &amp; Alerts
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#FEF3C7', color: '#D97706' }}>
-              <ShieldAlert size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.alertsCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Screen disconnects &amp; telemetry warnings
-          </div>
-        </div>
+        <MetricCard
+          label="Warnings & Alerts"
+          icon={ShieldAlert}
+          iconBg="#FEF3C7"
+          iconColor="#D97706"
+          value={metrics.alertsCount}
+          description="Screen disconnects & telemetry warnings"
+        />
 
-        {/* Card 4: System Events */}
-        <div className="screen-stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              System Confirmations
-            </span>
-            <span style={{ padding: '0.35rem', borderRadius: '8px', background: '#ECFDF5', color: '#059669' }}>
-              <Sparkles size={18} />
-            </span>
-          </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>
-            {metrics.systemEventsCount}
-          </div>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Successful pairings &amp; campaign launches
-          </div>
-        </div>
+        <MetricCard
+          label="System Confirmations"
+          icon={Sparkles}
+          iconBg="#ECFDF5"
+          iconColor="#059669"
+          value={metrics.systemEventsCount}
+          description="Successful pairings & campaign launches"
+        />
       </div>
 
       {/* 3. Search & Filter Controls Ribbon */}
