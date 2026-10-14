@@ -114,9 +114,9 @@ export default function MasterDashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              HQ MASTER CONTROL MATRIX • MULTI-TENANT ENTERPRISE
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} aria-hidden="true"></span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' }}>
+              HQ Master Control Matrix • Multi-Tenant Enterprise
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -347,7 +347,7 @@ export default function MasterDashboard() {
 
           {/* Telemetry Summary Cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            <div style={{ padding: '0.75rem 1rem', borderRadius: '10px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                 <CheckCircle2 size={18} color="#059669" />
                 <div>
@@ -359,12 +359,12 @@ export default function MasterDashboard() {
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
                 PASS
               </span>
             </div>
 
-            <div style={{ padding: '0.75rem 1rem', borderRadius: '10px', background: metrics.offlineScreens > 0 ? '#FEF2F2' : '#F8FAFC', border: metrics.offlineScreens > 0 ? '1px solid #FECACA' : '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: metrics.offlineScreens > 0 ? '#FEF2F2' : '#F8FAFC', border: metrics.offlineScreens > 0 ? '1px solid #FECACA' : '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                 {metrics.offlineScreens > 0 ? <AlertTriangle size={18} color="#DC2626" /> : <Monitor size={18} color="#64748B" />}
                 <div>
@@ -376,7 +376,7 @@ export default function MasterDashboard() {
                   </div>
                 </div>
               </div>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, background: metrics.offlineScreens > 0 ? '#FEE2E2' : '#F1F5F9', color: metrics.offlineScreens > 0 ? '#DC2626' : '#64748B', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, background: metrics.offlineScreens > 0 ? '#FEE2E2' : '#F1F5F9', color: metrics.offlineScreens > 0 ? '#DC2626' : '#64748B', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
                 {metrics.offlineScreens > 0 ? 'ATTN' : 'OK'}
               </span>
             </div>
@@ -436,7 +436,7 @@ export default function MasterDashboard() {
                             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{s.location || 'Location Not Set'}</div>
                           </td>
                           <td style={{ padding: '0.75rem 0.5rem' }}>
-                            <code style={{ background: '#F1F5F9', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
+                            <code style={{ background: '#F1F5F9', padding: '0.15rem 0.4rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
                               {s.pairingCode}
                             </code>
                           </td>
@@ -445,7 +445,7 @@ export default function MasterDashboard() {
                           </td>
                           <td style={{ padding: '0.75rem 0.5rem' }}>
                             {s.groupName ? (
-                              <span style={{ background: '#EFF6FF', color: '#1D4ED8', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
+                              <span style={{ background: '#EFF6FF', color: '#1D4ED8', padding: '0.15rem 0.45rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600 }}>
                                 {s.groupName}
                               </span>
                             ) : (
@@ -504,7 +504,7 @@ export default function MasterDashboard() {
                       key={admin.id}
                       style={{
                         padding: '0.85rem',
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         background: '#F8FAFC',
                         border: '1px solid #E2E8F0',
                         display: 'flex',
@@ -550,7 +550,7 @@ export default function MasterDashboard() {
           
           {/* Quick Action Shortcuts */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h4 style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', margin: '0 0 0.85rem' }}>
+            <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.85rem' }}>
               Quick Command Center
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -630,10 +630,13 @@ export default function MasterDashboard() {
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
               <div>
-                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-secondary)', margin: 0 }}>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.2rem' }}>
                   Live Audit Receipts
                 </h4>
-                <span style={{ fontSize: '0.72rem', color: '#15803D', fontWeight: 600 }}>● Network Verification</span>
+                <span style={{ fontSize: '0.8rem', color: '#15803D', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A', display: 'inline-block' }}></span>
+                  Network Verification
+                </span>
               </div>
               <Link href="/master/proof-of-play" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-color)' }}>
                 View All
@@ -659,11 +662,11 @@ export default function MasterDashboard() {
                         {log.screenName}
                       </span>
                       <span style={{
-                        padding: '0.1rem 0.4rem',
-                        borderRadius: '4px',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '6px',
                         background: '#DCFCE7',
                         color: '#15803D',
-                        fontSize: '0.65rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700
                       }}>
                         Verified

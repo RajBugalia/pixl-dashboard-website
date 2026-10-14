@@ -22,6 +22,10 @@
   --card-radius: 16px;
   --input-radius: 8px;
   --button-radius: 8px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
   
   /* Semantic Colors */
   --success: #10B981;
