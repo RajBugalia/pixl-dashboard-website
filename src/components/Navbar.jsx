@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { Bell, User, LogOut, Settings, Menu, X } from 'lucide-react';
 import { API_BASE_URL } from '@/config/constants';
 
