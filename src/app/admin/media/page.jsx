@@ -614,8 +614,8 @@ export default function MediaLibrary() {
                         </span>
                       </div>
 
-                      {/* Duration Tag if Video */}
-                      {item.durationSeconds > 0 && (
+                      {/* Duration Tag for Video */}
+                      {item.type === 'VIDEO' && (
                         <div style={{
                           position: 'absolute',
                           bottom: '8px',
@@ -631,7 +631,7 @@ export default function MediaLibrary() {
                           gap: '0.2rem'
                         }}>
                           <Clock size={10} />
-                          <span>{item.durationSeconds}s</span>
+                          <span>Video</span>
                         </div>
                       )}
                     </div>
@@ -817,7 +817,7 @@ export default function MediaLibrary() {
                         </span>
                       </td>
                       <td style={{ fontSize: '0.82rem', color: '#64748B' }}>
-                        {item.durationSeconds > 0 ? `${item.durationSeconds}s` : '--'}
+                        {item.type === 'VIDEO' ? 'Video Stream' : 'Set in Playlists'}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -914,9 +914,9 @@ export default function MediaLibrary() {
                   <strong style={{ color: '#0F172A' }}>{selectedAsset.type}</strong>
                 </div>
                 <div>
-                  <span style={{ color: '#94A3B8', display: 'block', fontSize: '0.7rem' }}>DURATION</span>
-                  <strong style={{ color: '#0F172A' }}>
-                    {selectedAsset.durationSeconds > 0 ? `${selectedAsset.durationSeconds}s` : '10s (Default)'}
+                  <span style={{ color: '#94A3B8', display: 'block', fontSize: '0.7rem' }}>PLAYBACK DURATION</span>
+                  <strong style={{ color: selectedAsset.type === 'IMAGE' ? '#2563EB' : '#0F172A', fontSize: '0.78rem' }}>
+                    {selectedAsset.type === 'IMAGE' ? 'Configured in Playlists' : 'Video Runtime'}
                   </strong>
                 </div>
               </div>

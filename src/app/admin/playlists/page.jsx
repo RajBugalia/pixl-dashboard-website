@@ -53,6 +53,8 @@ export default function AdminPlaylists() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [modalSelectedMediaIds, setModalSelectedMediaIds] = useState([]);
+  const [modalMediaDurations, setModalMediaDurations] = useState({});
+  const [batchDurationInput, setBatchDurationInput] = useState(10);
   const [modalMediaSearch, setModalMediaSearch] = useState('');
   const [modalMediaTypeFilter, setModalMediaTypeFilter] = useState('ALL'); // 'ALL' | 'IMAGE' | 'VIDEO'
   const [savingPlaylist, setSavingPlaylist] = useState(false);
@@ -293,12 +295,59 @@ export default function AdminPlaylists() {
     });
   };
 
-  // Modal: Toggle Media selection
+  // Modal: Toggle Media selection with duration initialization
   const toggleModalMedia = (id) => {
-    setModalSelectedMediaIds(prev =>
-      prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id]
-    );
+    setModalSelectedMediaIds(prev => {
+      const isSelected = prev.includes(id);
+      if (isSelected) {
+        return prev.filter(mId => mId !== id);
+      } else {
+        const item = media.find(m => m.id === id);
+        const defaultDur = item?.durationSeconds || (item?.type === 'IMAGE' ? 10 : 15);
+        setModalMediaDurations(d => ({ ...d, [id]: d[id] || defaultDur }));
+        return [...prev, id];
+      }
+    });
   };
+
+  // Batch set duration across all selected images
+  const applyBatchDuration = (secs) => {
+    const num = Math.max(1, parseInt(secs, 10) || 10);
+    setBatchDurationInput(num);
+    setModalMediaDurations(prev => {
+      const updated = { ...prev };
+      modalSelectedMediaIds.forEach(id => {
+        const item = media.find(m => m.id === id);
+        if (item?.type === 'IMAGE') {
+          updated[id] = num;
+        }
+      });
+      return updated;
+    });
+  };
+
+  // Adjust duration for a single media item
+  const updateSingleDuration = (id, newDuration) => {
+    const num = Math.max(1, parseInt(newDuration, 10) || 1);
+    setModalMediaDurations(prev => ({ ...prev, [id]: num }));
+  };
+
+  // Step duration (+/- delta)
+  const stepSingleDuration = (id, delta) => {
+    setModalMediaDurations(prev => {
+      const current = prev[id] || 10;
+      return { ...prev, [id]: Math.max(1, current + delta) };
+    });
+  };
+
+  // Total selected loop duration in seconds
+  const totalSelectedDuration = useMemo(() => {
+    return modalSelectedMediaIds.reduce((acc, id) => {
+      const item = media.find(m => m.id === id);
+      const dur = modalMediaDurations[id] || item?.durationSeconds || 10;
+      return acc + dur;
+    }, 0);
+  }, [modalSelectedMediaIds, modalMediaDurations, media]);
 
   // Filtered media for Create Modal
   const modalFilteredMedia = useMemo(() => {
@@ -328,13 +377,14 @@ export default function AdminPlaylists() {
     try {
       const res = await client.post('/playlists', {
         name: newPlaylistName.trim(),
-        mediaIds: modalSelectedMediaIds
+        mediaIds: modalSelectedMediaIds,
+        mediaDurations: modalMediaDurations
       });
 
       Swal.fire({
         icon: 'success',
         title: 'Playlist Created!',
-        text: `Sequence "${newPlaylistName.trim()}" is ready for broadcast.`,
+        text: `Sequence "${newPlaylistName.trim()}" is ready with custom slide durations.`,
         timer: 1500,
         showConfirmButton: false
       });
@@ -342,6 +392,7 @@ export default function AdminPlaylists() {
       setShowCreateModal(false);
       setNewPlaylistName('');
       setModalSelectedMediaIds([]);
+      setModalMediaDurations({});
       setModalMediaSearch('');
       await fetchData();
       if (res?.data?.id) {
@@ -1278,9 +1329,21 @@ export default function AdminPlaylists() {
                               <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {m.filename}
                               </p>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                                {m.type}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.1rem' }}>
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                                  {m.type}
+                                </span>
+                                <span style={{
+                                  fontSize: '0.65rem',
+                                  fontWeight: 700,
+                                  color: m.type === 'IMAGE' ? '#D97706' : '#2563EB',
+                                  background: m.type === 'IMAGE' ? '#FFFBEB' : '#EFF6FF',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px'
+                                }}>
+                                  {m.type === 'IMAGE' ? `${m.durationSeconds || 10}s` : 'Video Stream'}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -1506,7 +1569,7 @@ export default function AdminPlaylists() {
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
                     gap: '0.65rem',
-                    maxHeight: '260px',
+                    maxHeight: '190px',
                     overflowY: 'auto',
                     padding: '0.25rem'
                   }}>
@@ -1569,6 +1632,291 @@ export default function AdminPlaylists() {
                   </div>
                 )}
               </div>
+
+              {/* Selected Sequence & Slide Durations Configuration */}
+              {modalSelectedMediaIds.length > 0 && (
+                <div style={{
+                  background: '#F8FAFC',
+                  borderRadius: '12px',
+                  border: '1px solid #E2E8F0',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem'
+                }}>
+                  {/* Section Header with Total Runtime Badge */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Clock size={16} style={{ color: 'var(--accent-color)' }} />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Sequence Slide Durations ({modalSelectedMediaIds.length} items)
+                      </span>
+                    </div>
+
+                    <div style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: '#2563EB',
+                      background: '#EFF6FF',
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(37,99,235,0.2)'
+                    }}>
+                      Total Loop: {totalSelectedDuration}s ({Math.floor(totalSelectedDuration / 60)}m {totalSelectedDuration % 60}s)
+                    </div>
+                  </div>
+
+                  {/* Batch Duration Toolbar (Available when selecting multiple media) */}
+                  {modalSelectedMediaIds.length > 1 && (
+                    <div style={{
+                      background: '#FFFFFF',
+                      borderRadius: '8px',
+                      padding: '0.65rem 0.85rem',
+                      border: '1px solid #E2E8F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.65rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+                          Set all images duration:
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          {[5, 10, 15, 30, 60].map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => applyBatchDuration(s)}
+                              style={{
+                                padding: '0.2rem 0.5rem',
+                                fontSize: '0.72rem',
+                                fontWeight: 600,
+                                borderRadius: '4px',
+                                border: '1px solid #CBD5E1',
+                                background: batchDurationInput === s ? '#2563EB' : '#F8FAFC',
+                                color: batchDurationInput === s ? '#FFFFFF' : '#334155',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              {s}s
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <input
+                          type="number"
+                          min="1"
+                          max="3600"
+                          value={batchDurationInput}
+                          onChange={e => setBatchDurationInput(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          style={{
+                            width: '56px',
+                            padding: '0.2rem 0.4rem',
+                            fontSize: '0.78rem',
+                            borderRadius: '6px',
+                            border: '1px solid #CBD5E1',
+                            textAlign: 'center',
+                            fontWeight: 600
+                          }}
+                        />
+                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>sec</span>
+                        <button
+                          type="button"
+                          onClick={() => applyBatchDuration(batchDurationInput)}
+                          style={{
+                            padding: '0.25rem 0.65rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: '#2563EB',
+                            color: '#FFFFFF',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Apply All
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Individual Media Item Durations */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.4rem',
+                    maxHeight: '190px',
+                    overflowY: 'auto',
+                    paddingRight: '0.25rem'
+                  }}>
+                    {modalSelectedMediaIds.map((id, index) => {
+                      const item = media.find(m => m.id === id);
+                      if (!item) return null;
+                      const dur = modalMediaDurations[id] || (item.type === 'IMAGE' ? 10 : 15);
+                      const isImage = item.type === 'IMAGE';
+
+                      return (
+                        <div
+                          key={id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.45rem 0.65rem',
+                            background: '#FFFFFF',
+                            borderRadius: '8px',
+                            border: '1px solid #E2E8F0',
+                            gap: '0.75rem'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+                            <span style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              color: '#64748B',
+                              width: '18px',
+                              textAlign: 'center'
+                            }}>
+                              #{index + 1}
+                            </span>
+                            <div style={{
+                              width: '38px',
+                              height: '24px',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              background: '#0B0F19',
+                              flexShrink: 0
+                            }}>
+                              {isImage ? (
+                                <img src={item.publicUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <video src={item.publicUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              )}
+                            </div>
+                            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                              <p style={{
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                color: '#0F172A',
+                                margin: 0,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: '220px'
+                              }}>
+                                {item.filename}
+                              </p>
+                              <span style={{
+                                fontSize: '0.65rem',
+                                fontWeight: 600,
+                                color: isImage ? '#D97706' : '#2563EB'
+                              }}>
+                                {isImage ? 'IMAGE (Slide Duration)' : 'VIDEO (Full Stream)'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Stepper Duration Control */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                            {isImage ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => stepSingleDuration(id, -1)}
+                                  disabled={dur <= 1}
+                                  style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: '4px',
+                                    border: '1px solid #CBD5E1',
+                                    background: '#F1F5F9',
+                                    cursor: dur <= 1 ? 'not-allowed' : 'pointer',
+                                    fontWeight: 700,
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#475569'
+                                  }}
+                                >
+                                  -
+                                </button>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="3600"
+                                    value={dur}
+                                    onChange={e => updateSingleDuration(id, e.target.value)}
+                                    style={{
+                                      width: '46px',
+                                      padding: '0.15rem 0.25rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 700,
+                                      textAlign: 'center',
+                                      borderRadius: '4px',
+                                      border: '1px solid #CBD5E1'
+                                    }}
+                                  />
+                                  <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>s</span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => stepSingleDuration(id, 1)}
+                                  style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: '4px',
+                                    border: '1px solid #CBD5E1',
+                                    background: '#F1F5F9',
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#475569'
+                                  }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748B', padding: '0.2rem 0.5rem', background: '#F1F5F9', borderRadius: '4px' }}>
+                                Video Length
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => toggleModalMedia(id)}
+                              title="Remove from sequence"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#94A3B8',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Modal Action Buttons */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0' }}>
