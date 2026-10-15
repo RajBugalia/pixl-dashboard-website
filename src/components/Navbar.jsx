@@ -1,17 +1,22 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { Bell, User, LogOut, Settings } from 'lucide-react';
+import { Bell, User, LogOut, Settings, Menu, X } from 'lucide-react';
 import { API_BASE_URL } from '@/config/constants';
 
 export default function Navbar({ role, links }) {
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const fetchNotifications = async () => {
     try {
@@ -91,7 +96,7 @@ export default function Navbar({ role, links }) {
         </div>
         
         {/* Navigation Links */}
-        <div className="nav-links">
+        <div className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           {links.map((link) => {
             const isActive = pathname === link.href || (pathname.startsWith(link.href) && link.href !== '/admin/dashboard' && link.href !== '/master/dashboard');
             return (
@@ -99,6 +104,7 @@ export default function Navbar({ role, links }) {
                 key={link.href}
                 href={link.href} 
                 className={`nav-link ${isActive ? 'active' : ''}`}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
               </Link>
@@ -113,7 +119,7 @@ export default function Navbar({ role, links }) {
               className="icon-button" 
               title="Notifications" 
               aria-label="Notifications"
-              onClick={(e) => { e.stopPropagation(); setShowNotifications(!showNotifications); setShowDropdown(false); }}
+              onClick={(e) => { e.stopPropagation(); setShowNotifications(!showNotifications); setShowDropdown(false); setMobileMenuOpen(false); }}
             >
               <Bell size={20} />
               {notifications.filter(n => !n.isRead).length > 0 && (
@@ -122,7 +128,7 @@ export default function Navbar({ role, links }) {
             </button>
             
             {showNotifications && (
-              <div className="profile-dropdown" style={{ width: '320px', right: '-10px', top: 'calc(100% + 1rem)' }}>
+              <div className="profile-dropdown" style={{ width: '320px', maxWidth: 'calc(100vw - 2rem)', right: '-10px', top: 'calc(100% + 1rem)' }}>
                 <div className="dropdown-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontWeight: 600 }}>Notifications</span>
                   <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)', cursor: 'pointer' }} onClick={() => router.push(`${basePath}/notifications`)}>View All</span>
@@ -174,6 +180,22 @@ export default function Navbar({ role, links }) {
               </div>
             )}
           </div>
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button 
+            className="mobile-menu-toggle" 
+            title={mobileMenuOpen ? "Close Menu" : "Open Menu"}
+            aria-label={mobileMenuOpen ? "Close Navigation Menu" : "Open Navigation Menu"}
+            aria-expanded={mobileMenuOpen}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setMobileMenuOpen(!mobileMenuOpen); 
+              setShowDropdown(false); 
+              setShowNotifications(false); 
+            }}
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
       </div>
     </nav>

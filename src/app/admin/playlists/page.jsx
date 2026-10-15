@@ -631,11 +631,11 @@ export default function AdminPlaylists() {
         </div>
       </div>
 
-      {/* 4. Main 12-Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
+      {/* 4. Main Two-Column Responsive Layout */}
+      <div className="master-two-col">
         
-        {/* Left Column: Playlist Sequences (8 cols) */}
-        <div style={{ gridColumn: 'span 12', lg: 'span 8', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }} className="col-span-12 xl:col-span-8">
+        {/* Left Column: Playlist Sequences */}
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {filteredPlaylists.length === 0 ? (
             <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-secondary)' }}>
               <ListMusic size={48} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
@@ -1062,8 +1062,8 @@ export default function AdminPlaylists() {
           )}
         </div>
 
-        {/* Right Column: Quick Sequence Builder & Active Loop Inspector (4 cols) */}
-        <aside style={{ gridColumn: 'span 12', lg: 'span 4', minWidth: 0 }} className="col-span-12 xl:col-span-4">
+        {/* Right Column: Quick Sequence Builder & Active Loop Inspector */}
+        <aside style={{ minWidth: 0 }}>
           <div className="glass-panel" style={{ padding: '1.25rem', position: 'sticky', top: '5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             
             {/* Inspector Header */}
