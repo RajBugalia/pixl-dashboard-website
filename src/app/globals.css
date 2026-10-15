@@ -1429,10 +1429,17 @@ a {
 .master-header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.65rem;
+  flex-wrap: nowrap;
   flex-shrink: 0;
   margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .master-header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
 }
 
 /* Master Button Standards */

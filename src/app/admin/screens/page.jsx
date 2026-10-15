@@ -321,15 +321,8 @@ export default function AdminScreens() {
           {/* New Group Button */}
           <button
             onClick={handleCreateNewGroup}
-            className="btn-secondary"
-            style={{
-              width: 'auto',
-              padding: '0.5rem 0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.85rem'
-            }}
+            className="master-btn-secondary"
+            title="Create Screen Group"
           >
             <FolderPlus size={16} />
             <span>New Group</span>

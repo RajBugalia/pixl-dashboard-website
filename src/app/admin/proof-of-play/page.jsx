@@ -264,24 +264,17 @@ export default function AdminProofOfPlay() {
           </p>
         </div>
 
-        <button
-          onClick={handleExportCSV}
-          disabled={logs.length === 0}
-          className="btn-primary"
-          style={{
-            width: 'auto',
-            padding: '0.5rem 1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            fontSize: '0.88rem',
-            opacity: logs.length === 0 ? 0.6 : 1,
-            cursor: logs.length === 0 ? 'not-allowed' : 'pointer'
-          }}
-        >
-          <Download size={16} />
-          <span>Export Audit (CSV)</span>
-        </button>
+        <div className="master-header-actions">
+          <button
+            onClick={handleExportCSV}
+            disabled={logs.length === 0}
+            className="master-btn-primary"
+            title="Export Proof-of-Play Audit Log to CSV"
+          >
+            <Download size={16} />
+            <span>Export Audit (CSV)</span>
+          </button>
+        </div>
       </div>
 
       {/* 4 High-Impact Metric Cards */}

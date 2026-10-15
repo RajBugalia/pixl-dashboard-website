@@ -29,6 +29,7 @@ import Swal from 'sweetalert2';
 import Link from 'next/link';
 import client from '@/api/client';
 import MetricCard from '@/components/MetricCard';
+import PageHeader from '@/components/PageHeader';
 
 export default function AdminPlaylists() {
   const [playlists, setPlaylists] = useState([]);
@@ -425,88 +426,45 @@ export default function AdminPlaylists() {
   return (
     <>
       {/* 1. Header & Operational Matrix Command Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              HQ OPERATIONAL MATRIX • SEQUENCE ARCHITECTURE
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h1 className="page-title" style={{ margin: 0 }}>Playlists</h1>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DBEAFE',
-              color: '#1D4ED8',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.totalPlaylists} Active Sequences
-            </span>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.2rem 0.65rem',
-              borderRadius: '9999px',
-              background: '#DCFCE7',
-              color: '#15803D',
-              fontSize: '0.75rem',
-              fontWeight: 700
-            }}>
-              {metrics.totalSequencedMedia} Total Media Slots
-            </span>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.35rem' }}>
-            Build continuous media playback sequences, inspect ordered timeline blocks, and link playlists to screen campaigns.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="HQ OPERATIONAL MATRIX • SEQUENCE ARCHITECTURE"
+        title="Playlists"
+        badges={[
+          {
+            label: `${metrics.totalPlaylists} Active Sequences`,
+            bg: '#DBEAFE',
+            color: '#1D4ED8'
+          },
+          {
+            label: `${metrics.totalSequencedMedia} Total Media Slots`,
+            bg: '#DCFCE7',
+            color: '#15803D'
+          }
+        ]}
+        description="Build continuous media playback sequences, inspect ordered timeline blocks, and link playlists to screen campaigns."
+        actions={
+          <>
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="master-btn-secondary"
+              title="Reload Sequences"
+              aria-label="Reload sequences"
+            >
+              <RotateCw size={15} className={refreshing ? 'animate-spin' : ''} />
+              <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
+            </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => fetchData(true)}
-            disabled={refreshing}
-            className="btn-secondary"
-            title="Reload Sequences"
-            style={{
-              padding: '0.5rem 0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.88rem',
-              background: '#ffffff',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              cursor: refreshing ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <RotateCw size={16} className={refreshing ? 'animate-spin' : ''} />
-            <span>{refreshing ? 'Syncing...' : 'Refresh'}</span>
-          </button>
-
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary"
-            style={{
-              width: 'auto',
-              padding: '0.55rem 1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              fontSize: '0.88rem',
-              fontWeight: 600
-            }}
-          >
-            <Plus size={18} />
-            <span>Create New Playlist</span>
-          </button>
-        </div>
-      </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="master-btn-primary"
+            >
+              <Plus size={16} />
+              <span>Create New Playlist</span>
+            </button>
+          </>
+        }
+      />
 
       {/* 2. Four Dynamic Metric Cards */}
       <div className="master-stat-grid">

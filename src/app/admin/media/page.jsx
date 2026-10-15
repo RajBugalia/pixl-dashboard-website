@@ -218,14 +218,15 @@ export default function MediaLibrary() {
           </p>
         </div>
 
-        <button
-          className="btn-primary"
-          onClick={() => setShowUpload(!showUpload)}
-          style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem' }}
-        >
-          {showUpload ? <X size={16} /> : <Plus size={16} />}
-          <span>{showUpload ? 'Close Upload' : 'Upload Media'}</span>
-        </button>
+        <div className="master-header-actions">
+          <button
+            className={showUpload ? "master-btn-secondary" : "master-btn-primary"}
+            onClick={() => setShowUpload(!showUpload)}
+          >
+            {showUpload ? <X size={16} /> : <Plus size={16} />}
+            <span>{showUpload ? 'Close Upload' : 'Upload Media'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Top 4 Stats Cards (Stitch Design, Real Data Only) */}

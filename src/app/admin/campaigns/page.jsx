@@ -372,21 +372,19 @@ export default function Campaigns() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="master-header-actions">
           {!showBuilder ? (
             <button
-              className="btn-primary"
+              className="master-btn-primary"
               onClick={() => setShowBuilder(true)}
-              style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem' }}
             >
               <Plus size={16} />
               <span>Create New Campaign</span>
             </button>
           ) : (
             <button
-              className="btn-secondary"
+              className="master-btn-secondary"
               onClick={() => setShowBuilder(false)}
-              style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem' }}
             >
               <X size={16} />
               <span>Cancel</span>
