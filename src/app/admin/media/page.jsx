@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Upload,
   Film,
@@ -19,7 +19,10 @@ import {
   Layers,
   LayoutGrid,
   List,
-  Check
+  Check,
+  AlertCircle,
+  RotateCw,
+  FileUp
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import client from '@/api/client';
@@ -29,10 +32,12 @@ export default function MediaLibrary() {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Upload Form State
+  // Batch Upload State
   const [showUpload, setShowUpload] = useState(false);
-  const [file, setFile] = useState(null);
+  const [queue, setQueue] = useState([]); // [{ id, file, name, size, type, previewUrl, status, progress, errorMsg }]
   const [uploading, setUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Inspector & Selection State
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -79,45 +84,161 @@ export default function MediaLibrary() {
     loadData();
   }, [loadData]);
 
-  // Handle Upload
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      Swal.fire({ icon: 'warning', title: 'Select File', text: 'Please select a video or image file to upload.' });
+  // Helper: Add multiple files to batch upload queue
+  const addFilesToQueue = (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    const validFiles = Array.from(fileList).filter(f => 
+      f.type.startsWith('image/') || f.type.startsWith('video/')
+    );
+
+    if (validFiles.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Unsupported Files',
+        text: 'Please select valid image (PNG, JPG, WEBP) or video (MP4, WebM) files.'
+      });
+      return;
+    }
+
+    const newItems = validFiles.map((f, idx) => ({
+      id: `${f.name}-${f.size}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 7)}`,
+      file: f,
+      name: f.name,
+      size: f.size,
+      type: f.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+      previewUrl: URL.createObjectURL(f),
+      status: 'pending', // 'pending' | 'uploading' | 'completed' | 'error'
+      progress: 0,
+      errorMsg: null
+    }));
+
+    setQueue(prev => [...prev, ...newItems]);
+  };
+
+  // Remove individual file from batch queue
+  const removeFileFromQueue = (id) => {
+    setQueue(prev => {
+      const item = prev.find(i => i.id === id);
+      if (item?.previewUrl) {
+        try { URL.revokeObjectURL(item.previewUrl); } catch (_) {}
+      }
+      return prev.filter(i => i.id !== id);
+    });
+  };
+
+  // Clear entire queue
+  const clearQueue = () => {
+    queue.forEach(item => {
+      if (item.previewUrl) {
+        try { URL.revokeObjectURL(item.previewUrl); } catch (_) {}
+      }
+    });
+    setQueue([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Queue metrics calculation
+  const queueStats = useMemo(() => {
+    const total = queue.length;
+    const completed = queue.filter(q => q.status === 'completed').length;
+    const pending = queue.filter(q => q.status === 'pending').length;
+    const errors = queue.filter(q => q.status === 'error').length;
+    const totalBytes = queue.reduce((acc, q) => acc + (q.size || 0), 0);
+    const totalMb = (totalBytes / (1024 * 1024)).toFixed(1);
+    const imagesCount = queue.filter(q => q.type === 'IMAGE').length;
+    const videosCount = queue.filter(q => q.type === 'VIDEO').length;
+    return { total, completed, pending, errors, totalMb, imagesCount, videosCount };
+  }, [queue]);
+
+  // Execute Batch Upload
+  const handleBatchUpload = async (e) => {
+    if (e) e.preventDefault();
+    const itemsToUpload = queue.filter(item => item.status === 'pending' || item.status === 'error');
+    if (itemsToUpload.length === 0) {
+      Swal.fire({ icon: 'info', title: 'Nothing to upload', text: 'Please add new media files to the queue.' });
       return;
     }
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+    let successCount = 0;
+    let failCount = 0;
+    let newlyUploaded = [];
 
-    try {
-      const res = await client.post('/media/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+    // Process files with concurrency limit
+    const CONCURRENCY_LIMIT = 2;
+    const queueCopy = [...itemsToUpload];
 
-      const newMedia = res.data;
-      setMedia(prev => [newMedia, ...prev]);
-      setSelectedAsset(newMedia);
-      setFile(null);
-      setShowUpload(false);
-      e.target.reset();
+    const uploadWorker = async () => {
+      while (queueCopy.length > 0) {
+        const item = queueCopy.shift();
+        if (!item) break;
 
+        // Set status to uploading
+        setQueue(prev => prev.map(it => it.id === item.id ? { ...it, status: 'uploading', progress: 0, errorMsg: null } : it));
+
+        const formData = new FormData();
+        formData.append('file', item.file);
+
+        try {
+          const res = await client.post('/media/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (evt) => {
+              if (evt.total) {
+                const pct = Math.round((evt.loaded * 100) / evt.total);
+                setQueue(prev => prev.map(it => it.id === item.id ? { ...it, progress: Math.min(pct, 98) } : it));
+              }
+            }
+          });
+
+          const createdMedia = res.data;
+          successCount++;
+          newlyUploaded.push(createdMedia);
+
+          // Update item state to completed
+          setQueue(prev => prev.map(it => it.id === item.id ? { ...it, status: 'completed', progress: 100 } : it));
+
+          // Immediately inject newly uploaded media into media list
+          setMedia(prev => [createdMedia, ...prev.filter(m => m.id !== createdMedia.id)]);
+        } catch (err) {
+          failCount++;
+          const msg = err.response?.data?.error || err.message || 'Upload failed';
+          setQueue(prev => prev.map(it => it.id === item.id ? { ...it, status: 'error', errorMsg: msg } : it));
+        }
+      }
+    };
+
+    // Run parallel upload workers
+    const workers = Array.from({ length: Math.min(CONCURRENCY_LIMIT, itemsToUpload.length) }, () => uploadWorker());
+    await Promise.all(workers);
+
+    setUploading(false);
+
+    if (newlyUploaded.length > 0) {
+      setSelectedAsset(newlyUploaded[0]);
+    }
+
+    if (failCount === 0) {
       Swal.fire({
         icon: 'success',
-        title: 'Media Uploaded',
-        text: `"${newMedia.filename}" was uploaded to DOOH storage.`,
-        timer: 1500,
+        title: 'Batch Upload Complete',
+        text: `Successfully uploaded ${successCount} media ${successCount === 1 ? 'asset' : 'assets'} to DOOH cloud storage.`,
+        timer: 2000,
         showConfirmButton: false
       });
-    } catch (err) {
+      // Clear completed after brief display
+      setTimeout(() => {
+        clearQueue();
+        setShowUpload(false);
+      }, 1400);
+    } else {
       Swal.fire({
-        icon: 'error',
-        title: 'Upload Failed',
-        text: err.response?.data?.error || 'Failed to upload media to cloud storage.'
+        icon: 'warning',
+        title: 'Upload Partially Complete',
+        text: `${successCount} uploaded successfully, ${failCount} failed. You can retry the failed items.`,
+        confirmButtonColor: '#2563EB'
       });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -356,85 +477,407 @@ export default function MediaLibrary() {
         </div>
       </div>
 
-      {/* Upload Dropzone (Collapsible) */}
+      {/* Batch Upload Dropzone & Queue Manager (Collapsible) */}
       {showUpload && (
-        <div className="glass-panel" style={{ marginBottom: '1.5rem', background: '#FFFFFF', border: '2px dashed #2563EB', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
-              Upload New Media Asset
-            </h2>
-            <button
-              onClick={() => setShowUpload(false)}
-              style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <form onSubmit={handleUpload}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '1.5rem', background: '#F8FAFC', borderRadius: '12px' }}>
+        <div className="glass-panel" style={{ marginBottom: '1.5rem', background: '#FFFFFF', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #F1F5F9' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
+                width: 38,
+                height: 38,
+                borderRadius: '10px',
                 background: '#EFF6FF',
                 color: '#2563EB',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Upload size={24} />
+                <FileUp size={20} />
               </div>
-
-              <div style={{ textAlign: 'center' }}>
-                <label style={{
-                  display: 'inline-block',
-                  background: '#2563EB',
-                  color: '#FFFFFF',
-                  padding: '0.5rem 1.25rem',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer'
-                }}>
-                  Choose Media File
-                  <input
-                    type="file"
-                    accept="video/*,image/*"
-                    onChange={e => setFile(e.target.files[0])}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
-                  Supports MP4, WebM, PNG, and JPG up to 4K resolution.
+              <div>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                  Batch Media Upload
+                </h2>
+                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0.15rem 0 0' }}>
+                  Select or drag &amp; drop multiple videos and images to upload simultaneously to cloud storage.
                 </p>
-                {file && (
-                  <p style={{ fontSize: '0.88rem', fontWeight: 700, color: '#059669', marginTop: '0.5rem' }}>
-                    Selected: {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                  </p>
-                )}
               </div>
+            </div>
 
-              {file && (
-                <div style={{ maxWidth: '300px', maxHeight: '180px', borderRadius: '8px', overflow: 'hidden', background: '#0F172A' }}>
-                  {file.type.startsWith('image/') ? (
-                    <img src={URL.createObjectURL(file)} alt="preview" style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain' }} />
-                  ) : (
-                    <video src={URL.createObjectURL(file)} controls style={{ maxWidth: '100%', maxHeight: '180px' }} />
-                  )}
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {queue.length > 0 && (
+                <span style={{
+                  padding: '0.2rem 0.65rem',
+                  borderRadius: '9999px',
+                  background: '#DBEAFE',
+                  color: '#1D4ED8',
+                  fontSize: '0.75rem',
+                  fontWeight: 700
+                }}>
+                  {queue.length} {queue.length === 1 ? 'File' : 'Files'} Selected ({queueStats.totalMb} MB)
+                </span>
               )}
-
               <button
-                type="submit"
-                className="btn-primary"
-                disabled={!file || uploading}
-                style={{ width: 'auto', padding: '0.55rem 2rem' }}
+                onClick={() => {
+                  if (uploading) {
+                    Swal.fire({ icon: 'info', title: 'Upload in Progress', text: 'Please wait until the current batch upload finishes.' });
+                    return;
+                  }
+                  setShowUpload(false);
+                }}
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '0.35rem' }}
+                title="Close Upload Panel"
               >
-                {uploading ? 'Uploading to DOOH Cloud...' : 'Upload Asset'}
+                <X size={20} />
               </button>
             </div>
-          </form>
+          </div>
+
+          {/* Interactive Drag & Drop Area */}
+          <div
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragOver(false);
+              if (e.dataTransfer.files?.length) {
+                addFilesToQueue(e.dataTransfer.files);
+              }
+            }}
+            onClick={() => {
+              if (!uploading) fileInputRef.current?.click();
+            }}
+            style={{
+              border: `2px dashed ${isDragOver ? '#2563EB' : '#CBD5E1'}`,
+              background: isDragOver ? '#EFF6FF' : '#F8FAFC',
+              borderRadius: '12px',
+              padding: queue.length > 0 ? '1.5rem 1rem' : '2.5rem 1.5rem',
+              textAlign: 'center',
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              marginBottom: queue.length > 0 ? '1.25rem' : 0
+            }}
+          >
+            <input
+              type="file"
+              multiple
+              accept="video/*,image/*"
+              ref={fileInputRef}
+              onChange={(e) => {
+                if (e.target.files?.length) {
+                  addFilesToQueue(e.target.files);
+                  e.target.value = '';
+                }
+              }}
+              style={{ display: 'none' }}
+              disabled={uploading}
+            />
+
+            <div style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: '#FFFFFF',
+              color: '#2563EB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 0.75rem',
+              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.12)'
+            }}>
+              <Upload size={24} />
+            </div>
+
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: '0 0 0.35rem' }}>
+              Drag &amp; drop multiple media files here, or <span style={{ color: '#2563EB', textDecoration: 'underline' }}>browse</span>
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748B', margin: 0, maxWidth: '480px', marginInline: 'auto' }}>
+              Batch upload support for MP4, WebM, PNG, JPG, JPEG, and WEBP assets (up to 500MB per file).
+            </p>
+          </div>
+
+          {/* Queued Files Manager */}
+          {queue.length > 0 && (
+            <div>
+              {/* Queue Summary & Control Bar */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                background: '#F1F5F9',
+                borderRadius: '10px',
+                marginBottom: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', fontSize: '0.82rem' }}>
+                  <span style={{ fontWeight: 700, color: '#0F172A' }}>
+                    {queue.length} {queue.length === 1 ? 'Asset' : 'Assets'} Queued
+                  </span>
+                  <span style={{ color: '#CBD5E1' }}>•</span>
+                  <span style={{ color: '#475569' }}>
+                    {queueStats.imagesCount} Images, {queueStats.videosCount} Videos
+                  </span>
+                  <span style={{ color: '#CBD5E1' }}>•</span>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>
+                    {queueStats.totalMb} MB Total
+                  </span>
+                  {queueStats.completed > 0 && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px',
+                      background: '#DCFCE7',
+                      color: '#15803D',
+                      fontWeight: 700,
+                      fontSize: '0.75rem'
+                    }}>
+                      ✓ {queueStats.completed} Completed
+                    </span>
+                  )}
+                  {queueStats.errors > 0 && (
+                    <span style={{
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '9999px',
+                      background: '#FEE2E2',
+                      color: '#DC2626',
+                      fontWeight: 700,
+                      fontSize: '0.75rem'
+                    }}>
+                      ⚠ {queueStats.errors} Failed
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="master-btn-secondary"
+                    style={{ height: '32px', fontSize: '0.8rem', padding: '0 0.75rem' }}
+                  >
+                    <Plus size={14} /> Add More
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearQueue}
+                    disabled={uploading}
+                    style={{
+                      height: '32px',
+                      padding: '0 0.75rem',
+                      fontSize: '0.8rem',
+                      background: 'none',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: '8px',
+                      color: '#64748B',
+                      cursor: uploading ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              {/* Items Cards Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
+                gap: '0.75rem',
+                maxHeight: '340px',
+                overflowY: 'auto',
+                paddingRight: '0.25rem',
+                marginBottom: '1.25rem'
+              }}>
+                {queue.map(item => {
+                  const isUploading = item.status === 'uploading';
+                  const isCompleted = item.status === 'completed';
+                  const isError = item.status === 'error';
+
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.65rem 0.85rem',
+                        background: '#FFFFFF',
+                        border: isError ? '1px solid #FCA5A5' : isCompleted ? '1px solid #86EFAC' : '1px solid #E2E8F0',
+                        borderRadius: '10px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {/* Thumbnail Preview */}
+                      <div style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        background: '#0F172A',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative'
+                      }}>
+                        {item.type === 'IMAGE' ? (
+                          <img
+                            src={item.previewUrl}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <>
+                            <video
+                              src={item.previewUrl}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Film size={16} color="#ffffff" />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Info & Progress */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          color: '#0F172A',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {item.name}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem', fontSize: '0.72rem', color: '#64748B' }}>
+                          <span>{(item.size / (1024 * 1024)).toFixed(2)} MB</span>
+                          <span>•</span>
+                          <span style={{
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: '4px',
+                            background: item.type === 'VIDEO' ? '#DCFCE7' : '#FEF3C7',
+                            color: item.type === 'VIDEO' ? '#15803D' : '#B45309',
+                            fontWeight: 700
+                          }}>
+                            {item.type}
+                          </span>
+
+                          {/* Status */}
+                          {item.status === 'pending' && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#64748B' }}>
+                              <Clock size={12} /> Ready
+                            </span>
+                          )}
+                          {isUploading && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#2563EB', fontWeight: 600 }}>
+                              <RotateCw size={12} className="animate-spin" /> {item.progress}%
+                            </span>
+                          )}
+                          {isCompleted && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#16A34A', fontWeight: 700 }}>
+                              <CheckCircle size={12} /> Uploaded
+                            </span>
+                          )}
+                          {isError && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#DC2626', fontWeight: 600 }} title={item.errorMsg}>
+                              <AlertCircle size={12} /> Failed
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Progress Bar */}
+                        {isUploading && (
+                          <div style={{ height: 4, width: '100%', background: '#E2E8F0', borderRadius: 9999, overflow: 'hidden', marginTop: '0.35rem' }}>
+                            <div style={{ height: '100%', width: `${item.progress}%`, background: '#2563EB', transition: 'width 0.2s ease' }} />
+                          </div>
+                        )}
+                        {isCompleted && (
+                          <div style={{ height: 3, width: '100%', background: '#10B981', borderRadius: 9999, marginTop: '0.35rem' }} />
+                        )}
+                        {isError && (
+                          <div style={{ height: 3, width: '100%', background: '#EF4444', borderRadius: 9999, marginTop: '0.35rem' }} />
+                        )}
+                      </div>
+
+                      {/* Action Button */}
+                      {!uploading && !isCompleted && (
+                        <button
+                          type="button"
+                          onClick={() => removeFileFromQueue(item.id)}
+                          style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '0.25rem' }}
+                          title="Remove from batch"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+                      {isCompleted && (
+                        <CheckCircle size={18} style={{ color: '#16A34A', flexShrink: 0 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Batch Action Footer Bar */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                paddingTop: '0.75rem',
+                borderTop: '1px solid #F1F5F9'
+              }}>
+                <div>
+                  {uploading ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#2563EB', fontSize: '0.85rem', fontWeight: 600 }}>
+                      <RotateCw size={15} className="animate-spin" />
+                      <span>Uploading batch... ({queueStats.completed} of {queue.length} completed)</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '0.85rem', color: '#64748B' }}>
+                      Ready to upload {queueStats.pending + queueStats.errors} {queueStats.pending + queueStats.errors === 1 ? 'file' : 'files'} to DOOH storage.
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowUpload(false)}
+                    disabled={uploading}
+                    className="master-btn-secondary"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBatchUpload}
+                    disabled={uploading || queueStats.pending + queueStats.errors === 0}
+                    className="master-btn-primary"
+                    style={{ minWidth: '160px' }}
+                  >
+                    <Upload size={16} />
+                    <span>
+                      {uploading
+                        ? 'Uploading Batch...'
+                        : `Upload All (${queueStats.pending + queueStats.errors} Files)`}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
